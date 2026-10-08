@@ -175,7 +175,7 @@ GZIP_MIME = {MIME[e].split(";")[0] for e in GZIP_TYPES}
 def safe_path(path):
     """Map a URL path to a file under HERE, or None. Only the pages and assets/ are public."""
     name = path.lstrip("/") or "index.html"
-    if re.fullmatch(r"[A-Za-z0-9_-]+\.(html|js|css)", name):
+    if re.fullmatch(r"([A-Za-z0-9_-]+\.(html|css)|(js/)?[A-Za-z0-9_-]+\.js)", name):
         f = os.path.join(HERE, name)
         return f if os.path.isfile(f) else None
     if name.startswith("assets/"):

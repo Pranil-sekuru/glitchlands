@@ -77,7 +77,8 @@ class Paths(unittest.TestCase):
         self.assertTrue(server.safe_path("/").endswith("index.html"))
         self.assertTrue(server.safe_path("/game.html").endswith("game.html"))
         self.assertTrue(server.safe_path("/bugs.js").endswith("bugs.js"))
-        for bad in ("/server.py", "/../server.py", "/assets/../server.py", "/assets/%2e%2e/server.py", "/tests/test_server.py", "/nope.html"):
+        self.assertTrue(server.safe_path("/js/battle.js").replace("\\", "/").endswith("js/battle.js"))
+        for bad in ("/server.py", "/../server.py", "/assets/../server.py", "/assets/%2e%2e/server.py", "/js/../server.py", "/js/x/y.js", "/tests/test_server.py", "/nope.html"):
             self.assertIsNone(server.safe_path(bad), bad)
 
 
@@ -158,11 +159,11 @@ class Http(unittest.TestCase):
             self.assertEqual(re.findall(r"\son(?:click|load|error|keydown)=", body), [], page)
 
     def test_gzip_etag_and_revalidation(self):
-        code, body, h = self.call("/game.js", None, {"Accept-Encoding": "gzip"})
+        code, body, h = self.call("/js/verify.js", None, {"Accept-Encoding": "gzip"})
         self.assertEqual((code, h["content-encoding"]), (200, "gzip"))
         import gzip
         self.assertIn(b"function runCode", gzip.decompress(body))
-        self.assertEqual(self.call("/game.js", None, {"If-None-Match": h["etag"]})[0], 304)
+        self.assertEqual(self.call("/js/verify.js", None, {"If-None-Match": h["etag"]})[0], 304)
         self.assertEqual(h["cache-control"], "no-cache")
         self.assertIn("max-age", self.call("/assets/forest/npcs.png")[2]["cache-control"])
 

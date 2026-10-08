@@ -42,7 +42,7 @@ node tests/bank.test.js                    # bug bank: every fix prints the expe
 | `game.html` | game page (markup only) |
 | `bugs.js` | the bug bank (`§` marks the buggy line) |
 | `atlas.js` | sprite frame rectangles |
-| `game.js`, `game.css` | the game: canvas world, battle UI, quest logic |
+| `js/*.js`, `game.css` | the game, one file per feature: `core` (state, maps, input), `art`, `actors`, `meadow` (Region 1 world), `forest` (Region 2), `loop`, `dialog`, `verify` (runs player code, verifies AI bugs), `battle`, `ui` |
 | `landing.js`, `landing.css` | landing page animation |
 | `runner.js` | the sandboxed Web Worker that runs the player's code |
 | `selftest.html`, `selftest.js` | in-browser integration tests |

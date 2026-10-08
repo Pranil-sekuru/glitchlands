@@ -5,7 +5,7 @@
   "description": "A pixel adventure where every wild monster is a bug in a short program.",
   "scripts": {
     "start": "python3 server.py",
-    "check": "node --check game.js && node --check landing.js && node --check playtest.js && node --check selftest.js && node --check runner.js && node --check bugs.js && node --check atlas.js",
+    "check": "for f in js/*.js; do node --check $f; done && node --check landing.js && node --check playtest.js && node --check selftest.js && node --check runner.js && node --check bugs.js && node --check atlas.js",
     "test:bank": "node tests/bank.test.js",
     "test:server": "python3 -m unittest discover -s tests -v",
     "test": "npm run check && npm run test:bank && npm run test:server"
