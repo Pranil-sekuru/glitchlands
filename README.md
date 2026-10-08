@@ -33,7 +33,7 @@ npm test                                   # syntax check + bug-bank tests + ser
 python3 -m unittest discover -s tests -v   # server only: validation, rate limits, headers, CSP, gzip, paths
 node tests/bank.test.js                    # bug bank: every fix prints the expected output, the buggy code does not, decoys are fair
 ```
-**Integration tests in the browser:** start the server and open `http://localhost:8000/selftest.html`. It plays the real game in a frame (its own save slot): the code sandbox, the whole Region 1 and Region 2 quests, and accessibility checks (41 checks). CI (`.github/workflows/test.yml`) runs `npm test` and checks the repo stays under 10 MB.
+**Integration tests in the browser:** open `/selftest.html` (locally at `http://localhost:8000/selftest.html`, or on the live site). It plays the real game in a frame (its own save slot): the code sandbox, the whole Region 1 and Region 2 quests, and accessibility checks (41 checks). CI (`.github/workflows/test.yml`) runs `npm test` and checks the repo stays under 10 MB.
 
 ## Layout
 | File | Purpose |
