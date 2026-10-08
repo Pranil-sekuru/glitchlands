@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glitchlands</title>
+<meta name="description" content="Glitchlands: a pixel adventure where every wild monster is a bug in a short program. Catch it by understanding it.">
+<link rel="stylesheet" href="landing.css"></head>
+<body>
+<main id="hero">
+ <canvas id="scene" aria-hidden="true"></canvas>
+ <div class="inner">
+  <h1><canvas id="logo" role="img" aria-label="Glitchlands"></canvas></h1>
+  <p class="tag">Something's wrong in the code. Go find it.</p>
+  <div class="btns"><a class="btn play" href="game.html" id="play"><span class="blink">▶</span> PRESS START</a><button class="btn ghost" id="howbtn" type="button" aria-haspopup="dialog">How it works</button></div>
+ </div>
+
+<div id="how" role="dialog" aria-modal="true" aria-label="How Glitchlands works" hidden>
+ <div class="card">
+  <h2>How a hunt works</h2>
+  <ol>
+   <li><b>Walk into the tall grass</b> or up to something broken.</li>
+   <li><b>Click the buggy line.</b> Compare Expected with Got.</li>
+   <li><b>Fix the line and press RUN.</b> The game checks your code.</li>
+   <li><b>Throw the net</b> for bonus XP.</li>
+  </ol>
+  <p class="small"><kbd>WASD</kbd> move · <kbd>Enter</kbd> talk · <kbd>H</kbd> hint · <kbd>B</kbd> Bugdex · phones get an on-screen pad.</p>
+  <button class="btn play" id="howclose" type="button">Got it</button>
+ </div>
+</div>
+<p class="fine">Art: original, AI-generated</p>
+</main>
+<script src="atlas.js"></script>
+<script src="landing.js"></script>
+</body></html>

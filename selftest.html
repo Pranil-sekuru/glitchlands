@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glitchlands self-test</title>
+<link rel="stylesheet" href="selftest.css">
+</head><body>
+<main>
+ <h1>Glitchlands integration tests</h1>
+ <p>Plays the real game in the frame below: the sandbox, both quests from start to finish, and accessibility basics. Uses its own save slot, so your saved game is untouched.</p>
+ <p id="summary" role="status" aria-live="polite" data-status="running">Running…</p>
+ <ol id="results"></ol>
+ <iframe id="game" title="Game under test" src="game.html?save=selftest"></iframe>
+</main>
+<script src="selftest.js"></script>
+</body></html>

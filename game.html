@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Glitchlands</title>
+<meta name="description" content="Glitchlands: a pixel adventure where every wild monster is a bug in a short program. Find it, fix it, run it.">
+<link rel="stylesheet" href="game.css"></head><body>
+<main id="stage">
+ <h1 class="sr">Glitchlands</h1>
+ <canvas id="cv" role="img" aria-label="The game world. Move with the arrow keys or WASD, press Enter to talk to people and repair broken machines, and walk through tall grass to meet wild Bugs."></canvas>
+ <div id="sr" class="sr" role="status" aria-live="polite"></div>
+ <div class="hud" role="toolbar" aria-label="Game status"><a id="hl" href="index.html" title="Back to the title page">◀<span class="long"> GLITCHLANDS · MEADOW MAINFRAME</span></a><button id="dailybtn" type="button" data-act="daily">📅 DAILY HUNT</button><span id="hx">XP 0 · 🔥0</span><span id="hf" style="display:none">FPS</span></div>
+ <div id="quest" role="status" aria-live="polite"></div>
+ <div id="keys">WASD / ARROWS move · ENTER talk · B bugdex · H hint · F fps</div>
+ <div class="ov" id="battle" role="dialog" aria-label="Bug battle">
+  <div id="field">
+   <canvas id="fc" role="img" aria-label="The battle arena: your Debugger faces a wild Bug."></canvas>
+   <div id="foeplate" class="plate"><div class="nm"><b id="fn">?</b><span id="fl"></span></div><div class="hp"><i id="fhp"></i></div><div id="ft" class="sm"></div></div>
+   <div id="meplate" class="plate"><div class="nm"><b>DEBUGGER</b><span id="meinfo" class="sm"></span></div><div id="hearts"></div><div class="xp"><i id="xpbar"></i></div></div>
+  </div>
+  <div id="console">
+   <div id="bar"><i></i><i></i><i></i><span id="fname">bug.js</span><button id="hintbtn" data-act="hint">💡 HINT</button></div>
+   <div id="goal" aria-live="polite"></div>
+   <div id="code" role="group" aria-label="The program. Up and down arrows (or W and S) choose a line, Enter picks it."></div>
+   <div id="picked" style="display:none"></div>
+   <div id="menu" style="display:none"></div>
+   <div id="fxbar" style="display:none"><button id="fxrun" data-act="run">▶ RUN</button><button data-act="reset">↺ RESET LINE</button><button id="byteask" data-act="ask">🐤 ASK BYTE</button><button class="ghostb" data-act="giveup">GIVE UP</button></div>
+   <pre id="fxout" style="display:none" role="log" aria-live="polite" aria-label="Output of your code"></pre>
+   <div id="result" style="display:none" role="status" aria-live="polite"></div>
+  </div>
+  <div id="say"><div id="msg" role="status" aria-live="polite"></div><div id="hint" style="display:none" role="status" aria-live="polite"></div></div>
+ </div>
+ <div id="pad" aria-hidden="true">
+  <div class="dp"><button data-k="arrowup" style="grid-area:u">▲</button><button data-k="arrowleft" style="grid-area:l">◀</button><button data-k="arrowright" style="grid-area:r">▶</button><button data-k="arrowdown" style="grid-area:d">▼</button></div>
+  <div class="ab"><button data-a="h">💡</button><button data-a="b">📖</button><button data-a="enter" class="big">A</button></div>
+ </div>
+ <div class="ov" id="dexov" role="dialog" aria-label="Bugdex"><b style="font-size:22px;color:var(--sun)">BUGDEX</b><div id="dex"></div><button data-act="dex">CLOSE (B)</button></div>
+ <canvas id="qc" role="img" aria-label="Net timing: press Enter, Space or tap when the ring is on the target."></canvas>
+</main>
+<script src="atlas.js"></script>
+<script src="bugs.js"></script>
+<script src="game.js"></script></body></html>
