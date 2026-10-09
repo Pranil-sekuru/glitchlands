@@ -15,7 +15,14 @@ button{font:inherit;cursor:pointer}
 #keys{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;font-size:12px;color:#d6ecd9;background:rgba(8,20,14,.72);padding:3px 12px;border-radius:6px;pointer-events:none;white-space:nowrap}
 .ov{position:absolute;inset:0;display:none;z-index:4}
 .ov.on{display:block}
-.dlg{position:absolute;left:50%;transform:translateX(-50%);bottom:42px;width:min(900px,calc(100% - 24px));z-index:6;background:var(--panel);color:#fff;border:2px solid var(--sun);border-radius:10px;padding:12px 16px;cursor:pointer;font-size:15px;white-space:pre-wrap;box-shadow:0 0 18px rgba(255,216,74,.3)}
+/* dialogue: a Pokemon-style box over the lower half of the screen */
+.dlg{position:absolute;left:12px;right:12px;bottom:12px;height:46vh;z-index:6;background:#fbfbf2;color:#24262e;border:6px solid #2c3b33;border-radius:16px;
+ box-shadow:inset 0 0 0 4px #fbfbf2,inset 0 0 0 9px #7fc48e,0 10px 30px rgba(0,0,0,.45);padding:clamp(22px,4vh,40px) clamp(22px,4vw,48px);cursor:pointer;
+ font:bold clamp(19px,min(3.4vh,2.6vw),34px)/1.55 "Courier New",ui-monospace,monospace;white-space:pre-wrap;overflow:auto}
+.dlg .who{position:absolute;top:-20px;left:28px;background:#2c3b33;color:#fff;border:3px solid #7fc48e;border-radius:10px;padding:3px 16px;font-size:.62em;letter-spacing:.06em}
+.dlg .more{position:absolute;right:30px;bottom:20px;color:#d0473c;animation:dlgmore .8s steps(2) infinite}
+@keyframes dlgmore{50%{transform:translateY(5px)}}
+@media (max-width:760px){.dlg{height:40vh;bottom:150px;left:8px;right:8px}}
 #dexov{background:rgba(5,8,24,.96);padding:28px;overflow:auto}
 #dexov.on{display:block}
 #dex{font-size:14px;margin:14px 0}

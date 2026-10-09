@@ -97,7 +97,7 @@ function startBattle(rival,opts={}){
   const ai=(!rival&&!opts.daily&&S.tut)?AIQ.shift():null;
   B=opts.bug||(ai||pickBug());
   lastTitle=B.title;
-  const vis=makeVis(pick(catList()),rival),tut=!S.tut&&!rival&&!opts.daily,max=tut?99:(opts.lives||(S.catches<3?5:3));   // the look is random: it never reveals the bug's type
+  const vis=makeVis(pick(catList()),rival),tut=!S.tut&&!rival&&!opts.daily,max=tut||DEV?99:(opts.lives||(S.catches<3?5:3));   // the look is random: it never reveals the bug's type
   bs={phase:"line",cur:0,lives:max,max,hints:0,hintTxt:"",crossed:new Set(),opts:[],ci:0,rival,won:false,vis,tut,daily:!!opts.daily,didx:opts.idx||0,runs:0,typeTries:0,quest:opts.quest||null,reg:REG,byteAsks:0,fail:null,byteTxt:"",t0:Date.now()};
   if(opts.quest==="compiler")vis.scale=1.25;
   $("battle").classList.add("on");
@@ -114,7 +114,7 @@ function startBattle(rival,opts={}){
   show("hintbtn",true);
   $("fn").textContent=rival?"NULLO'S RUSH":opts.quest?opts.label.toUpperCase():(opts.daily?"BUG OF THE DAY "+(opts.idx+1)+"/3":"WILD BUG "+vis.epi.toUpperCase())+(vis.shiny?" ✨":"");
   $("fl").textContent=rival||opts.daily||opts.quest?"":"  Lv."+(tut?1:3);
-  $("ft").textContent=(B.src=="ai"?"🤖 written by Claude · verified by running it":"📘 from the bug bank")+" · type unknown";
+  $("ft").textContent=(B.src=="ai"?"🤖 written by "+(B.by||"AI")+" · verified by running it":"📘 from the bug bank")+" · type unknown";
   $("fhp").style.width="100%";
   renderCode(false);
   $("code").onclick=e=>{
@@ -133,10 +133,18 @@ function startBattle(rival,opts={}){
   paintCode();
   info(rival?"Nullo challenges you! ":opts.quest?"The glitch fights back! ":(opts.daily?"Daily hunt, bug "+(opts.idx+1)+" of 3! ":"A wild Bug appeared! "));
   prefetchAI();
+  if(DEV){
+    // dev mode skips finding the line and naming the mistake: straight to the fix
+    bs.cur=B.bug_line-1;
+    startFix()
+  }
 }
 function info(pre=""){
-  $("hearts").innerHTML=bs.tut?'<span style="font-size:14px;letter-spacing:0">Practice round: unlimited tries</span>':"";
-  $("hearts").style.display=bs.tut?"":"none";
+  const note=t=>'<span style="font-size:14px;letter-spacing:0">'+t+'</span>';
+  $("hearts").innerHTML=DEV?note("🛠 Dev mode: unlimited tries"):bs.tut?note("Practice round: unlimited tries")
+   :"❤️".repeat(Math.max(0,bs.lives))+"🖤".repeat(Math.max(0,bs.max-bs.lives))+" "+note(bs.lives+" of "+bs.max+" tries left");
+  $("hearts").setAttribute("aria-label",DEV||bs.tut?"Unlimited tries":bs.lives+" of "+bs.max+" tries left");
+  $("hearts").style.display="";
   $("goal").innerHTML=`<b>GOAL:</b> ${esc(B.task)}<div class="chips"><span class="e">Expected: <code>${esc(B.expected)}</code></span><span class="g">Got: <code>${esc(B.actual)}</code></span></div>`;
   const ins={line:bs.tut?"STEP 1: Click the line where Got goes wrong.":"Click the BUGGY line.",
   type:"STEP 2: Which label fits best? (Practice only: no heart is lost.) Click one, or press 1-"+bs.opts.length+".",
@@ -174,7 +182,7 @@ function lose(msg){
     finish(false);
     return true
   }
-  info(msg);
+  info(msg+(bs.tut||DEV?"":"(-1 try, "+bs.lives+" left) "));
   return false
 }
 function pickLine(){
@@ -239,6 +247,7 @@ function startFix(){
   show("fxbar",true);
   show("fxout",true);
   $("fxout").innerHTML='<span class="dim">Press RUN to see what your program prints.</span>';
+  $("fxrun").disabled=false;   // the last battle's win left it disabled
   renderCode(true);
   bs.atkAt=performance.now();
   if(bs.tut&&bs.hints<3){
@@ -261,11 +270,36 @@ function resetFix(){
     }
   }
 }
+function autoFix(){
+  // dev mode only: type in the textbook fix and run it (still verified by actually running the program)
+  if(!DEV||!bs||bs.phase!=="fix")return;
+  const i=$("fxin");
+  if(i){
+    i.value=B.fix;
+    runFix()
+  }
+}
 function giveUp(){
   if(bs&&bs.phase=="fix"){
     plog("giveup",{runs:bs.runs});
     finish(false)
   }
+}
+// A fake fix replaces the calculation with a constant (const perFriend = 3; / return 72;).
+// Caught when the textbook fix computes its value from other names but the player's line computes it from none.
+const KW=new Set(["const","let","var","return","true","false","null","undefined","new","typeof","Math","String","Number","console","log"]);
+function readsNames(rhs){
+  return(String(rhs).replace(/(["'`])(?:\\.|(?!\1).)*\1/g,"").match(/[A-Za-z_$][\w$]*/g)||[]).filter(n=>!KW.has(n)).length>0
+}
+function valueOf(line){
+  const s=line.trim().replace(/;\s*$/,""),r=s.match(/^return\b(.*)$/);
+  if(r)return r[1];
+  const a=s.match(/^(?:(?:const|let|var)\s+)?[\w$.\[\]]+\s*(?:[+\-*/%]|\*\*)?=(?!=)(.*)$/);
+  return a?a[1]:null
+}
+function hardcoded(val,fix){
+  const v=valueOf(val),f=valueOf(fix);
+  return v!==null&&f!==null&&readsNames(f)&&!readsNames(v)
 }
 let running=false;
 const q2=t=>"<code>"+esc(t)+"</code>";
@@ -328,6 +362,11 @@ async function runFix(){
     fo.innerHTML='<span class="bad">Fix the logic. Printing the answer yourself doesn\'t count!</span>';
     return
   }
+  if(hardcoded(val,B.fix)){
+    plog("run",{ok:false,why:"hardcoded"});
+    fo.innerHTML='<span class="bad">That just types in the answer. Repair the calculation so it works out the answer itself.</span>\n<span class="dim">No try lost.</span>';
+    return
+  }
   running=true;
   $("fxrun").disabled=true;
   fo.innerHTML='<span class="dim">Running…</span>';
@@ -353,10 +392,10 @@ async function runFix(){
     bs.phase="fixed";
     bs.fixedLine=val.trim();
     $("fxrun").disabled=true;
-    $("msg").textContent="Bug fixed! Now throw the net…";
+    $("msg").textContent=DEV?"Bug fixed!":"Bug fixed! Now throw the net…";
     setTimeout(()=>{
-      if(bs&&bs.phase==="fixed")startNet()
-    },1000);
+      if(bs&&bs.phase==="fixed")DEV?finish(true):startNet()
+    },DEV?600:1000);
     return
   }
   const visOK=same(r.out.slice(0,vis),B.out.slice(0,vis));
@@ -511,16 +550,7 @@ function endBattle(){
     buildMeadow();
     hud();
     say(["THE MEADOW COMPILER: Build succeeded. 0 errors. Thank you, Debugger.","Colour floods back through the village..."],()=>{
-      P.x=7;
-      P.y=9;
-      P.ox=7;
-      P.oy=9;
-      P.nx=7;
-      P.ny=9;
-      P.moving=false;
-      P.prog=0;
-      BYT.x=7;
-      BYT.y=9;
+      placeAt(R1.home[0],R1.home[1],0);
       syncGates();
       buildMeadow();
       hud();
@@ -529,12 +559,12 @@ function endBattle(){
     return
   }
   if(rival&&won){
-    M[8][28]=".";
+    M[R1.nullo[1]][R1.nullo[0]]=".";
     buildMeadow();
-    say(["NULLO: ...You actually read the code. Huh.","NULLO: I always smashed first and asked later. Maybe that's why my Bugs keep coming back.","NULLO: The gate's open. Syntax Forest is darker. Be careful, Debugger."])
+    say(["NULLO: ...You actually read the code. Huh.","NULLO: I always smashed first and asked later. Maybe that's why my Bugs keep coming back.","NULLO: The stairs are yours. The Compiler is up there, and past it, Syntax Forest. Be careful, Debugger."])
   }
   else if(rival)say(["NULLO: Told you. Speed wins. Come back when you're ready."]);
 }
 function endCard(){
-  say(["REGION 1 COMPLETE: THE MEADOW MAINFRAME IS RESTORED","The village has light, water, a ringing bell and its Compiler back. Look at the flowers!",`Bugs caught: ${S.catches}  ·  XP: ${S.xp}  ·  🔥 streak: ${S.streak}`,"The road south is open: follow it to the Syntax Forest."]);
+  say(["REGION 1 COMPLETE: THE MEADOW MAINFRAME IS RESTORED","The village has light, water, a ringing bell and its Compiler back. Look at the flowers!",`Bugs caught: ${S.catches}  ·  XP: ${S.xp}  ·  🔥 streak: ${S.streak}`,"The north-east trail past the Compiler is open: follow it to the Syntax Forest."]);
 }

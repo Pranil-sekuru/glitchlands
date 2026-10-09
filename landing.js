@@ -90,12 +90,12 @@ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 })();
 const IM={};
 let loaded=0;
-const FILES={bg:"battle-background.jpg",pb:"player-byte.png",bugA:"bugs-a.png",bugB:"bugs-b.png"};
+const FILES={bg:"battle-background.jpg",pb:"player-byte.png",bugA:"bugs-a.png",bugB:"bugs-b.png",hero:"../forest/npcs.png"};
 Object.keys(FILES).forEach(k=>{
   const i=new Image();
   i.onload=()=>{
     IM[k]=i;
-    if(++loaded==4)start()
+    if(++loaded==Object.keys(FILES).length)start()
   };
   i.src="assets/meadow/"+FILES[k]
 });
@@ -116,10 +116,27 @@ document.addEventListener("keydown",e=>{
     closeHow();
     return
   }
+  if(e.key=="`"){
+    setDev(!dev);
+    return
+  }
   if(e.key=="Enter"&&how.hidden&&!e.target.closest("a,button")){
-    location.href="game.html"
+    location.href=play.href
   }
 });
+// Dev mode (?dev=1, the 🛠 button or the ` key): PRESS START opens the game in dev mode
+const play=document.getElementById("play"),devbtn=document.getElementById("devbtn");
+let dev=new URLSearchParams(location.search).has("dev");
+function setDev(on){
+  dev=on;
+  play.href=on?"game.html?dev=1":"game.html";
+  devbtn.setAttribute("aria-pressed",String(on));
+  devbtn.textContent=on?"🛠 Dev mode: ON":"🛠 Dev mode";
+  devbtn.classList.toggle("on",on);
+  history.replaceState(null,"",on?"?dev=1":location.pathname)
+}
+devbtn.addEventListener("click",()=>setDev(!dev));
+setDev(dev);
 // Backdrop = the Meadow Mainframe arena art, the Debugger and Byte patrolling the clearing, wild bugs idling in the grass.
 function start(){
   const cv=document.getElementById("scene"),c=cv.getContext("2d");
@@ -174,7 +191,7 @@ function start(){
     if(heroX>1.1)heroX=-0.1;
     const fr=reduce?0:Math.floor(t/85)%8;
     sprite(IM.pb,MR.pb[6*8+fr],W*(heroX-.05),road,u*1.25);   // Byte trails behind
-    sprite(IM.pb,MR.pb[2*8+fr],W*heroX,road,u*1.25);          // the Debugger walks right, forever
+    sprite(IM.hero,FR.npcs[2*8+fr],W*heroX,road,u*1.25);          // the Debugger walks right, forever
     if(!reduce)requestAnimationFrame(frame)
   }
   requestAnimationFrame(frame);

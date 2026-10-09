@@ -53,6 +53,16 @@ class Parsing(unittest.TestCase):
         with self.assertRaises(ValueError):
             server.extract_json("no json here")
 
+    def test_reply_text_reads_chat_completions(self):
+        self.assertEqual(server.reply_text({"choices": [{"message": {"content": "{}"}}]}), "{}")
+
+    def test_open_model_provider_settings(self):
+        with mock.patch.dict(os.environ, {"LLM_API_KEY": "k", "LLM_BASE_URL": "http://localhost:11434/v1/", "LLM_MODEL": "qwen2.5"}, clear=True):
+            p = server.provider()
+            self.assertEqual((p["kind"], p["base"], p["model"], p["label"]), ("openai", "http://localhost:11434/v1", "qwen2.5", "qwen2.5"))
+        with mock.patch.dict(os.environ, {"BHA_KEY_FILE": "/nonexistent", "LLM_KEY_FILE": "/nonexistent"}, clear=True):
+            self.assertIsNone(server.provider())
+
     def test_reply_text_joins_only_text_blocks(self):
         resp = {"content": [{"type": "thinking", "thinking": "hm"}, {"type": "text", "text": "{"}, {"type": "text", "text": "}"}]}
         self.assertEqual(server.reply_text(resp), "{}")
@@ -114,13 +124,15 @@ class Http(unittest.TestCase):
         self.assertEqual(self.call("/assets/..%2fserver.py")[0], 404)
 
     def test_status_reflects_key(self):
-        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "x"}):
-            self.assertEqual(json.loads(self.call("/api/status")[1]), {"ai": True})
-        with mock.patch.dict(os.environ, {"BHA_KEY_FILE": "/nonexistent"}, clear=True):
-            self.assertEqual(json.loads(self.call("/api/status")[1]), {"ai": False})
+        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "x", "LLM_KEY_FILE": "/nonexistent"}, clear=True):
+            self.assertEqual(json.loads(self.call("/api/status")[1]), {"ai": True, "by": "Claude"})
+        with mock.patch.dict(os.environ, {"LLM_API_KEY": "x", "ANTHROPIC_API_KEY": "y"}, clear=True):
+            self.assertEqual(json.loads(self.call("/api/status")[1]), {"ai": True, "by": "GPT-OSS 120B"})
+        with mock.patch.dict(os.environ, {"BHA_KEY_FILE": "/nonexistent", "LLM_KEY_FILE": "/nonexistent"}, clear=True):
+            self.assertEqual(json.loads(self.call("/api/status")[1]), {"ai": False, "by": None})
 
     def test_bug_endpoint_input_validation(self):
-        with mock.patch.dict(os.environ, {"BHA_KEY_FILE": "/nonexistent"}, clear=True):
+        with mock.patch.dict(os.environ, {"BHA_KEY_FILE": "/nonexistent", "LLM_KEY_FILE": "/nonexistent"}, clear=True):
             self.assertEqual(json.loads(self.post({})[1])["reason"], "no_key")
         self.assertEqual(self.post(b"not json")[0], 400)
         self.assertEqual(self.post(b"[1,2]")[0], 400)
@@ -130,15 +142,15 @@ class Http(unittest.TestCase):
     def test_bug_endpoint_success_failure_and_rate_limit(self):
         with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "x"}):
             with mock.patch.object(server, "LIMITER", server.Limiter(2, 100)):
-                with mock.patch.object(server, "ask_claude", return_value=(dict(GOOD), None)) as ask:
+                with mock.patch.object(server, "ask_model", return_value=(dict(GOOD), None)) as ask:
                     code, body, _ = self.post({"difficulty": "bogus"})
                     self.assertTrue(json.loads(body)["ok"])
                     ask.assert_called_with("easy")                 # unknown difficulty falls back to easy
-                with mock.patch.object(server, "ask_claude", side_effect=RuntimeError("boom")):
+                with mock.patch.object(server, "ask_model", side_effect=RuntimeError("boom")):
                     self.assertEqual(json.loads(self.post({})[1])["reason"], "generation_failed")
                 self.assertEqual(self.post({})[0], 429)            # third call in the minute
             with mock.patch.object(server, "LIMITER", server.Limiter(5, 100)):
-                with mock.patch.object(server, "ask_claude", return_value=(None, "bad category")):
+                with mock.patch.object(server, "ask_model", return_value=(None, "bad category")):
                     self.assertEqual(json.loads(self.post({})[1])["reason"], "invalid_shape")
 
     def test_security_headers_and_sandbox_policy(self):

@@ -38,32 +38,33 @@ async function run() {
   check("sandbox: errors are reported, not thrown", !bad.ok && /boom/.test(bad.err));
 
   // ---- Region 1: the whole quest ----
-  W.setRegion(1); W.placeAt(7, 9, 2); G.mode = "walk";
+  const R1 = G.R1;
+  W.setRegion(1); W.placeAt(R1.start[0], R1.start[1], 0); G.mode = "walk";
   Object.assign(G.S, { q: { on: false, fixed: {}, nullo: false, done: false }, tut: false, catches: 0, log: [] });
-  G.M[8][28] = "N"; W.buildMeadow(); W.hud();
-  check("R1: systems and Compiler are on the map", [G.M[7][4], G.M[9][12], G.M[5][9]].join("") === "123" && G.M[8][30] === "C");
-  stand(4, 8, 0); W.interact(); check("R1: a system refuses before the quest starts", G.mode === "dialog"); drain();
-  stand(7, 7, 0); W.interact(); check("R1: the Professor starts the quest", G.S.q.on && /0\/3/.test($("quest").textContent)); drain();
-  stand(9, 6, 0); W.interact(); drain();
+  G.M[R1.nullo[1]][R1.nullo[0]] = "N"; W.buildMeadow(); W.hud();
+  check("R1: systems and Compiler are on the map", [G.M[8][5], G.M[13][13], G.M[5][12]].join("") === "123" && G.M[4][27] === "C");
+  stand(6, 8, 3); W.interact(); check("R1: a system refuses before the quest starts", G.mode === "dialog"); drain();
+  stand(4, 6, 0); W.interact(); check("R1: the Professor starts the quest", G.S.q.on && /0\/3/.test($("quest").textContent)); drain();
+  stand(12, 6, 0); W.interact(); drain();
   check("R1: the bell opens a tutorial battle", G.mode === "battle" && G.B.title === "Village Bell" && G.bs.tut, G.B && G.B.title);
   check("R1: bell repaired by fixing the code", await solve() === true); drain();
   check("R1: progress shows 1/3", G.qFixed() === 1);
-  stand(12, 8, 2); W.interact(); drain(); check("R1: pump repaired", await solve() === true); drain();
-  stand(27, 8, 1); W.interact(); check("R1: Nullo refuses until 3/3", G.mode === "dialog"); drain(); G.mode = "walk";
-  stand(4, 8, 0); W.interact(); drain(); check("R1: lantern repaired", await solve() === true); drain();
-  stand(27, 8, 1); W.interact(); drain();
+  stand(11, 14, 1); W.interact(); drain(); check("R1: pump repaired", await solve() === true); drain();
+  stand(27, 10, 1); W.interact(); check("R1: Nullo refuses until 3/3", G.mode === "dialog"); drain(); G.mode = "walk";
+  stand(6, 8, 3); W.interact(); drain(); check("R1: lantern repaired", await solve() === true); drain();
+  stand(27, 10, 1); W.interact(); drain();
   check("R1: Nullo duel starts at 3/3", G.mode === "battle" && G.bs.rival, G.B && G.B.title);
   check("R1: Nullo beaten", await solve() === true); drain();
-  check("R1: the gate opens", G.M[8][28] === "." && G.S.q.nullo);
-  stand(29, 8, 1); W.interact(); drain();
+  check("R1: Nullo steps aside", G.M[R1.nullo[1]][R1.nullo[0]] === "." && G.S.q.nullo);
+  stand(27, 5, 0); W.interact(); drain();
   check("R1: Meadow Compiler is a 4-heart boss", G.mode === "battle" && G.B.title === "Meadow Compiler" && G.bs.lives === 4);
   check("R1: Compiler repaired", await solve() === true); drain();
   check("R1: village restored and saved", G.S.q.done && JSON.parse(localStorage.getItem(G.SAVE_KEY)).q.done);
 
   // ---- Region 2: the whole quest ----
   Object.assign(G.S, { intro: true, tut: true, catches: 0, q2: { on: false, lantern: false, relay: false, bridge: false, rival: false, chest: false, done: false } });
-  W.syncGates(); W.setRegion(1); W.placeAt(6, 23, 2); G.mode = "walk"; W.landed();
-  check("R2: the south road leads into the forest", G.REG === 2 && G.P.x === 6 && G.P.y === 34);
+  W.syncGates(); W.setRegion(1); W.placeAt(G.R1.exit[0], G.R1.exit[1], 0); G.mode = "walk"; W.landed();
+  check("R2: the north-east trail leads into the forest", G.REG === 2 && G.P.x === 6 && G.P.y === 34);
   stand(13, 12, 0); W.interact(); check("R2: a system refuses before the ranger's quest", G.mode === "dialog" && !G.dlg.textContent.includes("A Bug")); drain();
   stand(11, 28, 3); W.interact(); check("R2: the ranger starts the quest", G.S.q2.on); drain();
   stand(13, 12, 0); W.interact(); drain(); check("R2: relay repaired", await solve() === true); drain();
@@ -77,7 +78,7 @@ async function run() {
   stand(40, 8, 0); W.interact(); drain(); check("R2: Forest Compiler is a 4-heart boss", G.bs.lives === 4 && G.B.title === "Forest Compiler"); check("R2: Compiler repaired", await solve() === true); drain();
   check("R2: the exit opens", G.S.q2.done && G.M[0][43] === "X");
   W.placeAt(43, 0, 0); W.landed(); drain(); G.mode = "walk"; W.placeAt(6, 35, 2); W.landed();
-  check("R2: the way back home works", G.REG === 1 && G.P.x === 6 && G.P.y === 22);
+  check("R2: the way back home works", G.REG === 1 && G.P.x === G.R1.arrive[0] && G.P.y === G.R1.arrive[1]);
 
   // ---- accessibility basics ----
   const unnamed = [...doc.querySelectorAll("button, a[href]")].filter(b => !(b.textContent.trim() || b.getAttribute("aria-label") || b.title));

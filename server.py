@@ -3,14 +3,18 @@
 
  - serves the landing page, the game and the art
  - GET  /healthz     -> {"ok": true}
- - GET  /api/status  -> {"ai": true|false}   (true when ANTHROPIC_API_KEY is set)
- - POST /api/bug     -> asks Claude for ONE fresh beginner bug (JavaScript) and returns it.
+ - GET  /api/status  -> {"ai": true|false, "by": "<model name>"}   (ai is true when a model key is set)
+ - POST /api/bug     -> asks the model for ONE fresh beginner bug (JavaScript) and returns it.
                         The *browser* then runs the buggy and the fixed program before the bug is ever shown,
                         so a bug that does not behave as claimed is thrown away.
 Without an API key the game simply uses its built-in, hand-checked bug bank.
 
-Configuration (environment): ANTHROPIC_API_KEY (or the file ~/.anthropic_key), BHA_MODEL, PORT, BHA_RATE_PER_MIN, BHA_DAILY_CAP.
-The key is only ever read from the environment; it is never logged, stored or sent to the browser.
+Which model writes the bugs (the first key found wins):
+ 1. any OpenAI-compatible host, open models included: LLM_API_KEY (or the file ~/.llm_key), LLM_BASE_URL (default Groq),
+    LLM_MODEL (default openai/gpt-oss-120b, an open-weight model), LLM_LABEL (the name shown on the bug's badge)
+ 2. Claude: ANTHROPIC_API_KEY (or the file ~/.anthropic_key), BHA_MODEL
+Other settings: PORT, BHA_RATE_PER_MIN, BHA_DAILY_CAP.
+Keys are only read from the environment or those local files; they are never logged, stored or sent to the browser.
 """
 import gzip
 import hashlib
@@ -27,6 +31,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.environ.get("BHA_MODEL", "claude-sonnet-5-5")
+GROQ_URL = "https://api.groq.com/openai/v1"
+LLM_DEFAULT_MODEL = "openai/gpt-oss-120b"
 CATS = ["off-by-one", "wrong-operator", "wrong-variable", "bad-condition", "missing-return", "infinite-loop"]
 DIFFICULTIES = ("easy", "medium", "hard")
 MAX_BODY = 2048
@@ -59,20 +65,38 @@ def log(*a):
     print(*a, file=sys.stderr, flush=True)
 
 
-def get_key():
-    """The API key comes from the environment (Cloud Run secret) or, for local development, from ~/.anthropic_key. Never from the repo."""
-    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+def read_secret(env, path):
+    """A key from the environment (a Cloud Run / Render secret) or, for local development, from a file in the home folder. Never from the repo."""
+    key = os.environ.get(env, "").strip()
     if not key:
         try:
-            with open(os.path.expanduser(os.environ.get("BHA_KEY_FILE", "~/.anthropic_key"))) as f:
+            with open(os.path.expanduser(path)) as f:
                 key = f.read().strip()
         except OSError:
             key = ""
     return key
 
 
+def get_key():
+    return read_secret("ANTHROPIC_API_KEY", os.environ.get("BHA_KEY_FILE", "~/.anthropic_key"))
+
+
+def provider():
+    """Which model writes bugs, or None: an OpenAI-compatible host (Groq by default) when LLM_API_KEY is set, else Claude."""
+    key = read_secret("LLM_API_KEY", os.environ.get("LLM_KEY_FILE", "~/.llm_key"))
+    if key:
+        model = os.environ.get("LLM_MODEL", LLM_DEFAULT_MODEL)
+        base = os.environ.get("LLM_BASE_URL", GROQ_URL).rstrip("/")
+        label = os.environ.get("LLM_LABEL") or ("GPT-OSS 120B" if model == LLM_DEFAULT_MODEL else model)
+        return {"kind": "openai", "key": key, "model": model, "base": base, "label": label}
+    key = get_key()
+    if key:
+        return {"kind": "anthropic", "key": key, "model": MODEL, "label": "Claude"}
+    return None
+
+
 def has_key():
-    return bool(get_key())
+    return provider() is not None
 
 
 def int_env(name, default):
@@ -122,17 +146,26 @@ def extract_json(text):
 
 
 def reply_text(resp):
-    """Join the text blocks of a Messages API response (other block types are ignored)."""
+    """The text of a reply: the text blocks of a Messages API response, or the first choice of a chat-completions one."""
+    if resp.get("choices"):
+        return str(((resp["choices"][0] or {}).get("message") or {}).get("content") or "")
     return "".join(b.get("text", "") for b in resp.get("content", []) if isinstance(b, dict) and b.get("type") == "text")
 
 
-def ask_claude(difficulty):
-    body = {"model": MODEL, "max_tokens": 3000,
-            "system": SYSTEM.replace("__CATS__", str(CATS)).replace("__DIFF__", difficulty),
-            "messages": [{"role": "user", "content": "Make one fresh bug. Category: %s." % random.choice(CATS[:5])}]}
-    req = urllib.request.Request("https://api.anthropic.com/v1/messages", json.dumps(body).encode(),
-                                 {"content-type": "application/json", "x-api-key": get_key(),
-                                  "anthropic-version": "2023-06-01"})
+def ask_model(difficulty):
+    p = provider()
+    system = SYSTEM.replace("__CATS__", str(CATS)).replace("__DIFF__", difficulty)
+    user = "Make one fresh bug. Category: %s." % random.choice(CATS[:5])
+    if p["kind"] == "anthropic":
+        body = {"model": p["model"], "max_tokens": 3000, "system": system, "messages": [{"role": "user", "content": user}]}
+        req = urllib.request.Request("https://api.anthropic.com/v1/messages", json.dumps(body).encode(),
+                                     {"content-type": "application/json", "x-api-key": p["key"], "anthropic-version": "2023-06-01"})
+    else:
+        body = {"model": p["model"], "max_tokens": 3000, "temperature": 0.9, "response_format": {"type": "json_object"},
+                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        # an explicit User-Agent: some hosts sit behind Cloudflare, which turns away Python's default one
+        req = urllib.request.Request(p["base"] + "/chat/completions", json.dumps(body).encode(),
+                                     {"content-type": "application/json", "authorization": "Bearer " + p["key"], "user-agent": "Glitchlands/1.0"})
     with urllib.request.urlopen(req, timeout=40) as r:
         resp = json.load(r)
     return validate(extract_json(reply_text(resp)))
@@ -214,7 +247,8 @@ class H(BaseHTTPRequestHandler):
         if path == "/healthz":
             return self._send(200, {"ok": True})
         if path == "/api/status":
-            return self._send(200, {"ai": has_key()})
+            p = provider()
+            return self._send(200, {"ai": bool(p), "by": p["label"] if p else None})
         f = safe_path(path)
         if f:
             with open(f, "rb") as fh:
@@ -253,13 +287,13 @@ class H(BaseHTTPRequestHandler):
         if not LIMITER.allow(self.client()):
             return self._send(429, {"ok": False, "reason": "rate_limited"})
         try:
-            bug, why = ask_claude(diff)
+            bug, why = ask_model(diff)
         except Exception as e:  # network / parse problems: the game just keeps using its bank
             detail = e.read()[:300].decode("utf-8", "replace") if isinstance(e, urllib.error.HTTPError) else ""
-            log("Claude generation failed: %s: %s %s" % (type(e).__name__, str(e)[:200], detail))
+            log("bug generation failed: %s: %s %s" % (type(e).__name__, str(e)[:200], detail))
             return self._send(200, {"ok": False, "reason": "generation_failed"})
         if not bug:
-            log("Claude bug rejected:", why)
+            log("generated bug rejected:", why)
             return self._send(200, {"ok": False, "reason": "invalid_shape"})
         self._send(200, {"ok": True, "bug": bug})
 
@@ -269,7 +303,8 @@ class H(BaseHTTPRequestHandler):
 
 def main():
     port = int(os.environ.get("PORT", 8000))
-    mode = "Claude writes fresh bugs (verified in the browser)" if has_key() else "built-in bug bank (set ANTHROPIC_API_KEY for Claude-written bugs)"
+    p = provider()
+    mode = ("%s writes fresh bugs (verified in the browser)" % p["label"]) if p else "built-in bug bank (set LLM_API_KEY or ANTHROPIC_API_KEY for AI-written bugs)"
     log("Glitchlands on http://0.0.0.0:%d  [%s]" % (port, mode))
     ThreadingHTTPServer(("0.0.0.0", port), H).serve_forever()
 

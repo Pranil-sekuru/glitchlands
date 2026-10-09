@@ -61,6 +61,7 @@ function rebuild(){
 }
 function setRegion(n){
   REG=n;
+  sizeCanvas();
   const R=n===1?REG1:REG2;
   M=R.M;
   W=R.W;
@@ -76,7 +77,7 @@ function placeAt(x,y,dir){
   PUFFS.length=0
 }
 function syncGates(){
-  REG1.M[23][6]=S.q.done?"X":"x"
+  REG1.M[R1.exit[1]][R1.exit[0]]=S.q.done?"X":"x"
 }
 function enterForest(){
   flash=350;
@@ -90,8 +91,8 @@ function enterForest(){
 function enterVillage(){
   flash=350;
   setRegion(1);
-  placeAt(6,22,0);
-  S.pos={r:1,x:6,y:22};
+  placeAt(R1.arrive[0],R1.arrive[1],2);
+  S.pos={r:1,x:R1.arrive[0],y:R1.arrive[1]};
   save();
   hud();
   plog("region",{r:1})
@@ -268,7 +269,7 @@ function buildForest(){
       c.fillStyle="rgba(3,20,16,.42)";
       c.fillRect(X,Y,64,64)
     }   // shadowed undergrowth beneath the tree props
-    else if(ch==="g")tex(c,0,h2<.9?2:3,X,Y,rot,flip);                                   // encounter ferns
+    else if(ch==="g")tex(c,0,h2<.9?2:3,X,Y,0,flip);                                   // encounter ferns
     else tex(c,0,1,X,Y,rot,flip);                                              // moss floor (also under paths, objects and the bridge banks)
     if((ch==="B"||ch==="b")&&q.bridge){
       tex(c,6,7,X,Y,0,false,2)

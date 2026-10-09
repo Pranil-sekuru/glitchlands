@@ -1,4 +1,4 @@
-// verify.js: Running the player's code and verifying Claude-written bugs
+// verify.js: Running the player's code and verifying AI-written bugs
 // (classic script: shares one global scope with the other files in js/, loaded in the order listed in game.html)
 // ---------- running the player's code: runner.js in a Web Worker with a timeout; the server's CSP blocks all network access ----------
 function runCode(src,ms=900){
@@ -29,12 +29,13 @@ function runCode(src,ms=900){
   })
 }
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-// ---------- Claude-written bugs: fetched from the local server, then VERIFIED by running them before they are ever shown ----------
-let AI_ON=false,aiFails=0;
+// ---------- AI-written bugs (Claude or an open model): fetched from the local server, then VERIFIED by running them before they are ever shown ----------
+let AI_ON=false,AI_BY="AI",aiFails=0;
 const AIQ=[];
 let aiBusy=false;
 fetch("/api/status").then(r=>r.json()).then(j=>{
   AI_ON=!!j.ai;
+  AI_BY=String(j.by||"AI").slice(0,40);
   prefetchAI()
 }).catch(()=>{
 });
@@ -51,7 +52,7 @@ async function verifyBug(raw){
     if(!f.ok||!same(f.out,out))return null;                 // the fix must really produce the claimed output
     if(b.ok&&same(b.out,out))return null;                   // and the buggy version must really behave differently
     return {title:String(raw.title||"Mystery bug"),task:String(raw.task),category:raw.category,expected:String(raw.expected),actual:String(raw.actual),code:lines.join("\n"),bug_line:bl,
-   hints:raw.hints.slice(0,3).map(String),fix:raw.fix.trim(),explanation:String(raw.explanation||""),out,extra:extra.join("\n"),ok:[raw.category],src:"ai"}
+   hints:raw.hints.slice(0,3).map(String),fix:raw.fix.trim(),explanation:String(raw.explanation||""),out,extra:extra.join("\n"),ok:[raw.category],src:"ai",by:AI_BY}
   }catch(e){
     return null
   }

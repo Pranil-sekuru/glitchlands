@@ -1,8 +1,9 @@
 // actors.js: Actors (player, Byte, NPCs), Bug sprites, Bugdex portraits, dust
 // (classic script: shares one global scope with the other files in js/, loaded in the order listed in game.html)
-// ---------- actors: rows are down, left, right, up; the player and Byte share player-byte.png, the professor and Nullo share npcs.png ----------
+// ---------- actors: rows are down, left, right, up; Byte uses player-byte.png and the professor npcs.png (meadow pack); the hero and Nullo use the forest pack's npcs.png ----------
 const FROW=[3,2,0,1];   // my dir (0 up, 1 right, 2 down, 3 left) -> sheet row offset
-const ACT={player:["pb",0,146,46],byte:["pb",4,98,26],prof:["npc",0,131,44],nullo:["npc",4,131,44],villager:["vil",0,255,44]};   // [atlas, first row, source height px, height on screen]
+MR.hero=FR.npcs;   // the hero (lantern + cloak, rows 0-3) and Nullo (purple coat, rows 4-7) come from the forest pack in both regions
+const ACT={player:["hero",0,148,46],byte:["pb",4,98,26],prof:["npc",0,131,44],nullo:["hero",4,148,46],villager:["vil",0,255,44]};   // [atlas, first row, source height px, height on screen]
 function actor(c,who,x,y,dir,mv,t,o={}){
   const a=ACT[who],img=o.sheet||MI[a[0]],rects=MR[a[0]];
   if(!img)return;
@@ -249,11 +250,11 @@ function foeFrame(t){
   c.beginPath();
   c.ellipse(mx,my,ref*.2,ref*.058,0,0,7);
   c.fill();
-  if(MI.pb){
-    const r=MR.pb[3*8],k=hh/r[3],lunge=atk?Math.sin(Math.min(1,(now-bs.atkAt)/340)*Math.PI)*ref*.07:0;   // back view; a quick lunge when you land a hit
+  if(MI.hero){
+    const r=MR.hero[3*8],k=hh/r[3],lunge=atk?Math.sin(Math.min(1,(now-bs.atkAt)/340)*Math.PI)*ref*.07:0;   // back view; a quick lunge when you land a hit
     c.imageSmoothingEnabled=true;
     c.imageSmoothingQuality="high";
-    c.drawImage(MI.pb,r[0],r[1],r[2],r[3],mx-r[2]*k/2+lunge*.5,my-r[3]*k-lunge,r[2]*k,r[3]*k)
+    c.drawImage(MI.hero,r[0],r[1],r[2],r[3],mx-r[2]*k/2+lunge*.5,my-r[3]*k-lunge,r[2]*k,r[3]*k)
   }
   // your hearts, floating right above your Debugger (icons from the meadow effects sheet)
   if(!bs.tut&&MI.fx){

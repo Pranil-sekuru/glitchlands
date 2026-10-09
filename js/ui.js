@@ -19,6 +19,13 @@ function toggleDex(){
 }
 // ---------- keys ----------
 function onKey(k){
+  if(k=="`"){
+    // the backquote key switches dev mode on or off (reloads the page, each mode has its own save)
+    const u=new URL(location.href);
+    DEV?u.searchParams.delete("dev"):u.searchParams.set("dev","1");
+    location.href=u.href;
+    return
+  }
   if(k=="f"&&mode!="dialog"){
     showFps=!showFps;
     $("hf").style.display=showFps?"":"none";
@@ -119,7 +126,7 @@ document.querySelectorAll("#pad [data-a]").forEach(b=>b.addEventListener("pointe
   onKey(b.dataset.a)
 }));
 // ---------- buttons: one delegated handler instead of inline onclick attributes ----------
-const ACTIONS={daily:()=>startDaily(),hint:()=>onKey("h"),run:()=>runFix(),reset:()=>resetFix(),ask:()=>byteAsk(),giveup:()=>giveUp(),dex:()=>toggleDex(),end:()=>endBattle()};
+const ACTIONS={devskip:()=>devSkip(),autofix:()=>autoFix(),daily:()=>startDaily(),hint:()=>onKey("h"),run:()=>runFix(),reset:()=>resetFix(),ask:()=>byteAsk(),giveup:()=>giveUp(),dex:()=>toggleDex(),end:()=>endBattle()};
 document.addEventListener("click",e=>{
   const a=e.target.closest&&e.target.closest("[data-act]");
   if(a&&ACTIONS[a.dataset.act])ACTIONS[a.dataset.act]()
@@ -148,9 +155,28 @@ window.__gl={get S(){
   mode=v
 },get BANK(){
   return BANK
-},qFixed,repairsDone,SAVE_KEY};
+},qFixed,repairsDone,SAVE_KEY,R1};
+// ---------- dev mode: finish Region 1 in one click ----------
+function devSkip(){
+  if(!DEV||mode!=="walk"||P.moving||REG!==1)return;
+  S.tut=true;
+  S.intro=true;
+  S.q={on:true,fixed:{lamp:true,pump:true,bell:true},nullo:true,done:true};
+  S.r1done=true;
+  REG1.M[R1.nullo[1]][R1.nullo[0]]=".";
+  syncGates();
+  buildMeadow();
+  enterForest();
+  plog("devskip")
+}
+if(DEV){
+  $("devfix").style.display="";
+  document.title="Glitchlands (dev)";
+  $("hl").href="index.html?dev=1";
+  $("keys").textContent+=" · ` dev mode off"
+}
 // ---------- boot ----------
-if(S.r1done||S.q.nullo)M[8][28]=".";
+if(S.r1done||S.q.nullo)REG1.M[R1.nullo[1]][R1.nullo[0]]=".";
 syncGates();
 if(S.pos&&S.pos.r===2&&S.region===2){
   setRegion(2);
@@ -161,7 +187,7 @@ if(!S.intro){
   mode="dialog";
   S.intro=true;
   save();
-  say(["Long ago the Great Compiler kept every program in the Glitchlands running clean.","One night it crashed. Bugs, living mistakes, poured out and hid in the tall grass.","You are a new Debugger. Walk with the arrow keys or WASD. Press Enter to talk to Prof. Semicolon (the white-haired one by the lab)."])
+  say(["Long ago the Great Compiler kept every program in the Glitchlands running clean.","One night it crashed. Bugs, living mistakes, poured out and hid in the tall grass.","You are a new Debugger. Walk with the arrow keys or WASD. Follow the path north to the lab on the hill, then press Enter to talk to Prof. Semicolon (the white-haired one)."])
 }
 else mode="walk";
 requestAnimationFrame(loop);

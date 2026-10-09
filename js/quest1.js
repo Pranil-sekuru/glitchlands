@@ -14,9 +14,9 @@ const SYS=[
 const qFixed=()=>SYS.filter(y=>S.q.fixed[y.key]).length;
 function questText(){
   if(!S.q.on)return "Talk to Prof. Semicolon";
-  if(S.q.done)return "Village restored ✓ (the road south leads to Syntax Forest)";
+  if(S.q.done)return "Village restored ✓ (the north-east trail leads to Syntax Forest)";
   const n=qFixed();
   if(n<3)return "Fix the village: "+n+"/3 (lantern, pump, bell)";
-  if(!S.q.nullo)return "Out-think Nullo at the east gate";
-  return "Repair the Meadow Compiler (east corridor)"
+  if(!S.q.nullo)return "Out-think Nullo at the east stairs";
+  return "Repair the Meadow Compiler (up the east stairs)"
 }

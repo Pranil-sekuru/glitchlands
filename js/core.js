@@ -14,7 +14,10 @@ const catList=()=>REG===2?CATS8:CATS;
 const TIER={"Double Trouble":1,"Damage Dealer":1,"Birthday Candles":1,"Pizza Party Problem":1,"The Silent Function":1,"Coin Collector Glitch":1,"Is It Legal to Drive?":1,"Hot or Not":1,"Hello, Nobody":1,"Times Table Twist":3};
 // ---------- state ----------
 // the save slot can be changed with ?save=name (the integration tests use their own slot)
-const SAVE_KEY=new URLSearchParams(location.search).get("save")||"gl1";
+// ?dev = dev mode: hunts open straight on the fix step, no hearts lost, no net throw, an AUTO-FIX button and a skip to Region 2.
+// It plays on its own save slot so it never touches real progress.
+const QS=new URLSearchParams(location.search),DEV=QS.has("dev");
+const SAVE_KEY=QS.get("save")||(DEV?"gl1-dev":"gl1");
 let S;
 try{
   S=JSON.parse(localStorage.getItem(SAVE_KEY)||"{}")
@@ -54,66 +57,36 @@ const yesterday=()=>{
 const REDUCE=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const T=32;
 let W=32,H=24,REG=1;
-let M=[];
-let seed=7;
-const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
-(function(){
-  for(let y=0;y<H;y++){
-    M.push(new Array(W).fill("g"))
-  }
-  const set=(x,y,c)=>{
-    if(M[y]&&M[y][x]!==undefined)M[y][x]=c
-  };
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(x<2||x>=W-2||y<2||y>=H-2||x>=29)set(x,y,"T");
-  // forest clumps (2-3 tiles each so the canopy autotile always has edges and corners)
-  for(let tries=0,placed=0;placed<26&&tries<600;tries++){
-    const bw=2+Math.floor(rnd()*2),bh=2+Math.floor(rnd()*2),x=2+Math.floor(rnd()*(26-bw)),y=2+Math.floor(rnd()*(H-4-bh));
-    if(x<14&&y<13)continue;
-    if(x<=7&&x+bw>=5)continue;
-    if(y<=9&&y+bh>=7)continue;
-    if(x+bw>=24&&y<=13&&y+bh>=3)continue;
-    if(x+bw>=16&&x<=23&&y+bh>=11&&y<=18)continue;
-    let clash=false;
-    for(let j=-1;j<=bh&&!clash;j++)for(let i=-1;i<=bw;i++){
-      const tx=x+i,ty=y+j;
-      if(tx>=2&&tx<=W-3&&ty>=2&&ty<=H-3&&M[ty][tx]=="T"){
-        clash=true;
-        break
-      }
-    }
-    if(clash)continue;
-    for(let j=0;j<bh;j++)for(let i=0;i<bw;i++)set(x+i,y+j,"T");
-    placed++
-  }
-  for(let x=0;x<=28;x++)set(x,8,".");
-  for(let y=0;y<H;y++)set(6,y,".");
-  for(let y=2;y<=5;y++)for(let x=2;x<=4;x++)set(x,y,"L");           // the lab hill
-  set(7,6,"P");
-  set(8,7,"s");
-  set(10,7,"V");
-  set(5,7,"V");
-  for(let y=2;y<=11;y++)for(let x=2;x<=12;x++)if(M[y][x]=="g")M[y][x]="h";   // safe village lawn
-  const prop=(x,y,w,h)=>{
-    for(let j=0;j<h;j++)for(let i=0;i<w;i++)set(x+i,y+j,"D")
-  };   // collision only: the art for these is MDECOR (meadow module)
-  prop(11,6,1,1);
-  prop(8,2,2,1);
-  prop(11,2,2,3);
-  prop(9,10,2,2);
-  prop(2,10,2,2);
-  [[19,13],[20,13],[18,14],[19,14],[20,14],[21,14],[18,15],[19,15],[20,15],[21,15],[19,16],[20,16]].forEach(p=>set(p[0],p[1],"~"));
-  for(let y=4;y<=12;y++)set(28,y,"F");
-  set(28,8,"N");
-  set(29,8,".");
-  set(30,8,"C");
-  set(4,7,"1");
-  set(12,9,"2");
-  set(9,5,"3");
-  for(let i=0;i<40;i++){
-    const x=2+Math.floor(rnd()*26),y=2+Math.floor(rnd()*(H-4));
-    if(M[y][x]=="g")set(x,y,"f")
-  }
-})();
+// Region 1 is a painted map (assets/meadow/meadow-map.jpg, 32x24 tiles); this grid is what you can walk on, laid over the painting.
+// . path  h lawn  g tall grass (wild Bugs)  T trees, rocks, fences  ~ water  L lab  P professor  V villager  s sign
+// 1 lantern  2 pump (and the pump keeper beside it)  3 bell  N Nullo  C Meadow Compiler  x/X the north-east trail to Syntax Forest (closed/open)
+const R1={start:[3,21],home:[4,6],nullo:[28,10],exit:[29,1],arrive:[29,2]};
+const MEADOW=[
+ "TTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTT",
+ "TTTTTTTTT.TTTTTTTTTTTTTTTTTTTxTT",
+ "TLLLLLTTT.TTTTTTTTTTTTTTTTTTT.TT",
+ "TLLLLLTTT.hTTTTTTTTTTTTTTTTTT..T",
+ "TTT...hTT.TTTTTTTTTTTTTTTTTCTT.T",
+ "TTTTPhhTT.TT3.hTTTTTTTTT.......T",
+ "TTTT..hTT.....V.TTTTTTTTTTT.TTTT",
+ "TTTT..hTT....V.VTTTTTTTTTTT..TTT",
+ "TTTTh1.....TTTTTTTTTTTTTTTTT.TTT",
+ "TThhh1.Th..............hTTTT.TTT",
+ "TTTTTTT...TTgggggghTTT....h.N.hT",
+ "TTTTTTTTT.TTggggggggTTTTT..T.TTT",
+ "TTT~~~TTT.sTgTgggggghThghh...TTT",
+ "TTh~~~TTT.TTT222hggggggghhTh..TT",
+ "ThhTTh~TT...2TTThggggggghTThh..T",
+ "TTTT.......hTTTTggggggggTTTTThhT",
+ "TT...hhT~~...hhTTTThhTTTT~~TTThT",
+ "TTT.TTTTTTTT.....TThTTT~~~~~~TTT",
+ "TTh.TTTTTTTTTTTTThhhT~~~~~~~~TTT",
+ "TTT.TTTTTTTTTTTTThTThT~~~~~~TTTT",
+ "TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+ "TTT.hTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+ "TTT..TTTTTTTTTTTTTTTTTTTTTTTTTTT",
+ "TTT..TTTTTTTTTTTTTTTTTTTTTTTTTTT"];
+let M=MEADOW.map(r=>r.split(""));
 const REG1={M,W:32,H:24};
 const SOLID=new Set(["T","~","L","P","s","N","F","V","D","1","2","3","C","x","R","K","G","S","W","B"]);
 const GRASS=new Set(["g","f"]);
@@ -140,7 +113,9 @@ addEventListener("keyup",e=>{
 const cv=$("cv"),g=cv.getContext("2d");
 let SC=1;   // device pixels per world unit: the world is drawn at full screen resolution, so hi-res sprites stay sharp and pixel-art tiles stay crisp
 function sizeCanvas(){
-  const d=Math.min(3,window.devicePixelRatio||1),zs=Math.max(1,Math.min(5,Math.round(innerWidth/480)));
+  // Region 1 is one painting at ~45 px per tile, so it is shown near that size (more upscaling only blurs it);
+  // Region 2 is drawn from tiles and zooms in by whole steps
+  const d=Math.min(3,window.devicePixelRatio||1),zs=REG===1?Math.max(1.2,Math.min(2.6,innerWidth/700)):Math.max(1,Math.min(5,Math.round(innerWidth/480)));
   SC=zs*d;
   cv.width=Math.round(innerWidth*d);
   cv.height=Math.round(innerHeight*d);
@@ -153,8 +128,8 @@ addEventListener("resize",()=>{
   sizeCanvas();
   if(typeof fitField==="function")fitField()
 });
-const P={x:7,y:9,dir:2,prog:0,moving:false,nx:0,ny:0,steps:0,walk:0,ox:7,oy:9,wait:0};
-const BYT={x:7,y:9};
+const P={x:R1.start[0],y:R1.start[1],dir:0,prog:0,moving:false,nx:0,ny:0,steps:0,walk:0,ox:R1.start[0],oy:R1.start[1],wait:0};
+const BYT={x:R1.start[0],y:R1.start[1]};
 const DIRS=[[0,-1],[1,0],[0,1],[-1,0]];
 let flash=0;
 const hash=(x,y,n=0)=>{

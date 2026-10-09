@@ -7,7 +7,7 @@
  <h1 class="sr">Glitchlands</h1>
  <canvas id="cv" role="img" aria-label="The game world. Move with the arrow keys or WASD, press Enter to talk to people and repair broken machines, and walk through tall grass to meet wild Bugs."></canvas>
  <div id="sr" class="sr" role="status" aria-live="polite"></div>
- <div class="hud" role="toolbar" aria-label="Game status"><a id="hl" href="index.html" title="Back to the title page">◀<span class="long"> GLITCHLANDS · MEADOW MAINFRAME</span></a><button id="dailybtn" type="button" data-act="daily">📅 DAILY HUNT</button><span id="hx">XP 0 · 🔥0</span><span id="hf" style="display:none">FPS</span></div>
+ <div class="hud" role="toolbar" aria-label="Game status"><a id="hl" href="index.html" title="Back to the title page">◀<span class="long"> GLITCHLANDS · MEADOW MAINFRAME</span></a><button id="devbtn" type="button" data-act="devskip" style="display:none" title="Dev mode: mark Region 1 complete and walk into the Syntax Forest">🛠 SKIP TO FOREST</button><button id="dailybtn" type="button" data-act="daily">📅 DAILY HUNT</button><span id="hx">XP 0 · 🔥0</span><span id="hf" style="display:none">FPS</span></div>
  <div id="quest" role="status" aria-live="polite"></div>
  <div id="keys">WASD / ARROWS move · ENTER talk · B bugdex · H hint · F fps</div>
  <div class="ov" id="battle" role="dialog" aria-label="Bug battle">
@@ -22,7 +22,7 @@
    <div id="code" role="group" aria-label="The program. Up and down arrows (or W and S) choose a line, Enter picks it."></div>
    <div id="picked" style="display:none"></div>
    <div id="menu" style="display:none"></div>
-   <div id="fxbar" style="display:none"><button id="fxrun" data-act="run">▶ RUN</button><button data-act="reset">↺ RESET LINE</button><button id="byteask" data-act="ask">🐤 ASK BYTE</button><button class="ghostb" data-act="giveup">GIVE UP</button></div>
+   <div id="fxbar" style="display:none"><button id="fxrun" data-act="run">▶ RUN</button><button data-act="reset">↺ RESET LINE</button><button id="byteask" data-act="ask">🐤 ASK BYTE</button><button id="devfix" data-act="autofix" style="display:none">⚡ AUTO-FIX</button><button class="ghostb" data-act="giveup">GIVE UP</button></div>
    <pre id="fxout" style="display:none" role="log" aria-live="polite" aria-label="Output of your code"></pre>
    <div id="result" style="display:none" role="status" aria-live="polite"></div>
   </div>

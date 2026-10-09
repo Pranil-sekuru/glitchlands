@@ -73,6 +73,7 @@ function hud(){
   const qe=$("quest");
   if(qe)qe.textContent="🎯 "+(REG===2?questText2():questText());
   $("hx").textContent=`XP ${S.xp} · 🔥${S.streak} · 🐛${S.catches}`;
+  $("devbtn").style.display=DEV&&REG===1?"":"none";
   const db=$("dailybtn");
   if(db)db.textContent=dailyN()>=3?"📅 DAILY ✓":(dailyN()>0?"📅 DAILY "+dailyN()+"/3":"📅 DAILY HUNT")
 }

@@ -6,7 +6,7 @@ A top-down pixel adventure where every wild monster is a **bug in a short JavaSc
 - **The repair is the graded skill.** Your fix runs in a sandboxed Web Worker and must print exactly what the correct program prints, including hidden tests, so a lucky guess fails.
 - **Hints that teach.** Three guiding questions per bug, a "what failed" explanation from Byte, and the Prof's per-skill feedback in the Bugdex.
 - **A reason to return:** a daily hunt, a Bugdex of 8 species, and a streak.
-- **Claude writes new bugs** when `ANTHROPIC_API_KEY` is set; the *browser* runs the buggy and fixed programs and discards any bug that does not behave as claimed. Without a key the game uses its 38 hand-written, machine-checked bugs.
+- **An AI writes new bugs** when a key is set: an open-weight model such as GPT-OSS 120B on Groq (`LLM_API_KEY`) or Claude (`ANTHROPIC_API_KEY`); the *browser* runs the buggy and fixed programs and discards any bug that does not behave as claimed. Without a key the game uses its 38 hand-written, machine-checked bugs.
 
 ## How it meets the brief
 **Challenge: "Bug Hunt Arena": AI creates the bugs, a beginner hunts them; fair bugs, hints that teach, a reason to return.**
@@ -23,9 +23,13 @@ A top-down pixel adventure where every wild monster is a **bug in a short JavaSc
 ## Run
 ```
 python3 server.py            # http://localhost:8000   (Python 3.9+, standard library only)
-ANTHROPIC_API_KEY=... python3 server.py   # optional: Claude-written bugs
+LLM_API_KEY=... python3 server.py         # optional: bugs written by GPT-OSS 120B (open-weight) on Groq (or put the key in ~/.llm_key)
+LLM_BASE_URL=... LLM_MODEL=... LLM_API_KEY=... python3 server.py   # any other OpenAI-compatible host (OpenRouter, Together, Ollama...)
+ANTHROPIC_API_KEY=... python3 server.py   # or Claude-written bugs
 ```
 Controls: `WASD`/arrows move, `Enter`/`Space` talk, `H` hint, `B` Bugdex, `T` daily hunt. Phones get an on-screen pad.
+
+**Dev mode** (the 🛠 Dev mode button on the title page, `?dev=1`, or press `` ` `` to toggle): every hunt opens on the fix step with unlimited tries and no net throw, an ⚡ AUTO-FIX button runs the textbook fix, and 🛠 SKIP TO FOREST completes Region 1. It uses its own save slot (`gl1-dev`), so real progress is untouched.
 
 ## Test
 ```
@@ -46,7 +50,7 @@ node tests/bank.test.js                    # bug bank: every fix prints the expe
 | `landing.js`, `landing.css` | landing page animation |
 | `runner.js` | the sandboxed Web Worker that runs the player's code |
 | `selftest.html`, `selftest.js` | in-browser integration tests |
-| `server.py` | static server + `/api/bug` (Claude bug generator, rate-limited) |
+| `server.py` | static server + `/api/bug` (AI bug generator: an open model or Claude, rate-limited) |
 | `tests/` | unit and integration tests |
 | `assets/` | art, with provenance in `ASSETS.md` |
 

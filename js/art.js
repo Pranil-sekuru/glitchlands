@@ -2,7 +2,7 @@
 // (classic script: shares one global scope with the other files in js/, loaded in the order listed in game.html)
 // ---------- art: two original AI-generated packs (see ASSETS.md); sprite rectangles live in atlas.js ----------
 const FOR={terrain:"terrain.jpg",props:"props.png",npcs:"npcs.png",bugs:"bugs.png",effects:"effects.png",bg:"battle-background.jpg"},FI={};   // Syntax Forest (Region 2)
-const MEA={terrain:"terrain.jpg",env:"environment.png",sys:"village-systems.png",pb:"player-byte.png",npc:"npcs.png",vil:"villager.png",bugA:"bugs-a.png",bugB:"bugs-b.png",fx:"effects.png",bg:"battle-background.jpg"},MI={};   // Meadow Mainframe (Region 1, player, Byte, Nullo)
+const MEA={map:"meadow-map.jpg",env:"environment.png",sys:"village-systems.png",pb:"player-byte.png",npc:"npcs.png",vil:"villager.png",bugA:"bugs-a.png",bugB:"bugs-b.png",fx:"effects.png",bg:"battle-background.jpg",hero:"../forest/npcs.png"},MI={};   // Meadow Mainframe (Region 1, Byte); hero = the hero and Nullo from the forest pack, used in both regions
 let artReady=false;
 // Region 1 art loads first so the game starts quickly; Region 2's art streams in behind it.
 function loadArt(dir,files,into,then){
