@@ -1,0 +1,29 @@
+{
+  "image": "assets/meadow/door-animation.png",
+  "sizePixels": [
+    1254,
+    1254
+  ],
+  "columns": 4,
+  "rows": 4,
+  "cellPixels": [
+    313.5,
+    313.5
+  ],
+  "states": [
+    "closed",
+    "opening-35-degrees",
+    "opening-70-degrees",
+    "open"
+  ],
+  "rowNames": [
+    "home",
+    "lab",
+    "cottage",
+    "palisade-spare"
+  ],
+  "frameRect": "[column*313.5,row*313.5,313.5,313.5]",
+  "anchor": "center-bottom of entire cell; preserve margins between frames",
+  "alpha": true,
+  "generated": true
+}

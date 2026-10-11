@@ -1,0 +1,310 @@
+{
+  "furniture": {
+    "file": "interior-furniture.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "frames": {
+      "bed": {
+        "sourceRect": [
+          82,
+          38,
+          220,
+          299
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "bookcase": {
+        "sourceRect": [
+          388,
+          13,
+          215,
+          322
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "writing-desk": {
+        "sourceRect": [
+          675,
+          84,
+          233,
+          251
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "stool": {
+        "sourceRect": [
+          1024,
+          164,
+          145,
+          172
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "dining-table": {
+        "sourceRect": [
+          28,
+          429,
+          354,
+          226
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "chair": {
+        "sourceRect": [
+          438,
+          383,
+          134,
+          266
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "kitchen-cabinet": {
+        "sourceRect": [
+          661,
+          401,
+          261,
+          246
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "stove": {
+        "sourceRect": [
+          976,
+          366,
+          243,
+          288
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "lab-workbench": {
+        "sourceRect": [
+          35,
+          679,
+          445,
+          258
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "computer": {
+        "sourceRect": [
+          515,
+          711,
+          151,
+          226
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "lectern": {
+        "sourceRect": [
+          725,
+          685,
+          220,
+          260
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "specimen-dome": {
+        "sourceRect": [
+          1032,
+          680,
+          159,
+          266
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "window": {
+        "sourceRect": [
+          38,
+          974,
+          299,
+          240
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "exit-door": {
+        "sourceRect": [
+          393,
+          958,
+          216,
+          261
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "fern": {
+        "sourceRect": [
+          676,
+          982,
+          251,
+          240
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      },
+      "rug": {
+        "sourceRect": [
+          957,
+          1031,
+          265,
+          166
+        ],
+        "anchor": "bottom-center",
+        "solid": "set by placement footprint, never by visual alpha"
+      }
+    },
+    "cropRule": "use measured rectangles; do not divide this irregular furniture sheet into uniform cells"
+  },
+  "textures": {
+    "file": "interior-textures.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "frames": {
+      "oak-horizontal": {
+        "sourceRect": [
+          0.0,
+          0.0,
+          313.5,
+          313.5
+        ]
+      },
+      "oak-vertical": {
+        "sourceRect": [
+          313.5,
+          0.0,
+          313.5,
+          313.5
+        ]
+      },
+      "stone-small": {
+        "sourceRect": [
+          627.0,
+          0.0,
+          313.5,
+          313.5
+        ]
+      },
+      "slate-lab": {
+        "sourceRect": [
+          940.5,
+          0.0,
+          313.5,
+          313.5
+        ]
+      },
+      "plaster-beamed": {
+        "sourceRect": [
+          0.0,
+          313.5,
+          313.5,
+          313.5
+        ]
+      },
+      "plaster-plain": {
+        "sourceRect": [
+          313.5,
+          313.5,
+          313.5,
+          313.5
+        ]
+      },
+      "stone-wall": {
+        "sourceRect": [
+          627.0,
+          313.5,
+          313.5,
+          313.5
+        ]
+      },
+      "timber-wall": {
+        "sourceRect": [
+          940.5,
+          313.5,
+          313.5,
+          313.5
+        ]
+      },
+      "oak-light": {
+        "sourceRect": [
+          0.0,
+          627.0,
+          313.5,
+          313.5
+        ]
+      },
+      "sage-kitchen": {
+        "sourceRect": [
+          313.5,
+          627.0,
+          313.5,
+          313.5
+        ]
+      },
+      "stone-cream": {
+        "sourceRect": [
+          627.0,
+          627.0,
+          313.5,
+          313.5
+        ]
+      },
+      "oak-dark": {
+        "sourceRect": [
+          940.5,
+          627.0,
+          313.5,
+          313.5
+        ]
+      },
+      "wood-baseboard": {
+        "sourceRect": [
+          0.0,
+          940.5,
+          313.5,
+          313.5
+        ]
+      },
+      "wood-cap": {
+        "sourceRect": [
+          313.5,
+          940.5,
+          313.5,
+          313.5
+        ]
+      },
+      "stone-base": {
+        "sourceRect": [
+          627.0,
+          940.5,
+          313.5,
+          313.5
+        ]
+      },
+      "stone-cap": {
+        "sourceRect": [
+          940.5,
+          940.5,
+          313.5,
+          313.5
+        ]
+      }
+    },
+    "repeatNote": "Generated surfaces; seamless tiling not yet verified in-engine. Use consistent scale and 1px crop inset if neighboring tiles bleed."
+  }
+}

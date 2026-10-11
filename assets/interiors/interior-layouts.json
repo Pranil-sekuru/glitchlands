@@ -1,0 +1,492 @@
+{
+  "tileWorldPixels": 32,
+  "indexing": "zero-based M[y][x]; X right, Y down",
+  "collisionSymbols": [
+    "W",
+    "F"
+  ],
+  "rooms": [
+    {
+      "id": "home",
+      "region": 0,
+      "size": [
+        10,
+        8
+      ],
+      "grid": [
+        "WWWWWWWWWW",
+        "WWWWWWWWWW",
+        "WQ..kk.ccW",
+        "WQ.......W",
+        "W...JJ..pW",
+        "W...JJM..W",
+        "Wp..rr...W",
+        "WWWWOOWWWW"
+      ],
+      "spawn": [
+        4,
+        6
+      ],
+      "exitCells": [
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          7
+        ]
+      ],
+      "returnMeadow": [
+        18,
+        7
+      ],
+      "floorTexture": "oak-horizontal",
+      "wallTexture": "plaster-beamed",
+      "placements": [
+        {
+          "asset": "bed",
+          "footprint": [
+            1,
+            2,
+            1,
+            2
+          ],
+          "visualFeet": [
+            1.5,
+            3.95
+          ],
+          "drawWidthTiles": 1.6,
+          "solid": true
+        },
+        {
+          "asset": "bookcase",
+          "footprint": [
+            4,
+            2,
+            2,
+            1
+          ],
+          "visualFeet": [
+            5.0,
+            2.95
+          ],
+          "drawWidthTiles": 1.8,
+          "solid": true
+        },
+        {
+          "asset": "computer",
+          "footprint": [
+            7,
+            2,
+            2,
+            1
+          ],
+          "visualFeet": [
+            8.0,
+            2.95
+          ],
+          "drawWidthTiles": 1.1,
+          "solid": true
+        },
+        {
+          "asset": "dining-table",
+          "footprint": [
+            4,
+            4,
+            2,
+            2
+          ],
+          "visualFeet": [
+            5.0,
+            5.95
+          ],
+          "drawWidthTiles": 2,
+          "solid": true
+        },
+        {
+          "asset": "fern",
+          "footprint": [
+            8,
+            4,
+            1,
+            1
+          ],
+          "visualFeet": [
+            8.5,
+            4.95
+          ],
+          "drawWidthTiles": 0.85,
+          "solid": true
+        },
+        {
+          "asset": "fern",
+          "footprint": [
+            1,
+            6,
+            1,
+            1
+          ],
+          "visualFeet": [
+            1.5,
+            6.95
+          ],
+          "drawWidthTiles": 0.85,
+          "solid": true
+        },
+        {
+          "asset": "rug",
+          "footprint": [
+            4,
+            6,
+            2,
+            1
+          ],
+          "visualFeet": [
+            5.0,
+            6.95
+          ],
+          "drawWidthTiles": 2,
+          "solid": false
+        }
+      ],
+      "npc": {
+        "id": "mom",
+        "cell": [
+          6,
+          5
+        ],
+        "feet": [
+          6.5,
+          5.95
+        ],
+        "sprite": "Reuse current actor; preserve Mom dialogue."
+      },
+      "trigger": "existing O step-on exits"
+    },
+    {
+      "id": "lab",
+      "size": [
+        14,
+        10
+      ],
+      "grid": [
+        "WWWWWWWWWWWWWW",
+        "W.FFF.....FF.W",
+        "W............W",
+        "W.FFFF..F.F..W",
+        "W.FFFF.......W",
+        "W......F..F..W",
+        "W............W",
+        "WF...........W",
+        "W............W",
+        "WWWWWWOOWWWWWW"
+      ],
+      "spawn": [
+        6,
+        8
+      ],
+      "exitCells": [
+        [
+          6,
+          9
+        ],
+        [
+          7,
+          9
+        ]
+      ],
+      "returnMeadow": [
+        3,
+        4
+      ],
+      "floorTexture": "slate-lab",
+      "wallTexture": "stone-wall",
+      "placements": [
+        {
+          "asset": "bookcase",
+          "footprint": [
+            2,
+            1,
+            3,
+            1
+          ],
+          "visualFeet": [
+            3.5,
+            1.95
+          ],
+          "drawWidthTiles": 2.1,
+          "solid": true
+        },
+        {
+          "asset": "kitchen-cabinet",
+          "footprint": [
+            10,
+            1,
+            2,
+            1
+          ],
+          "visualFeet": [
+            11.0,
+            1.95
+          ],
+          "drawWidthTiles": 1.8,
+          "solid": true
+        },
+        {
+          "asset": "lab-workbench",
+          "footprint": [
+            2,
+            3,
+            4,
+            2
+          ],
+          "visualFeet": [
+            4.0,
+            4.95
+          ],
+          "drawWidthTiles": 3.7,
+          "solid": true
+        },
+        {
+          "asset": "computer",
+          "footprint": [
+            8,
+            3,
+            1,
+            1
+          ],
+          "visualFeet": [
+            8.5,
+            3.95
+          ],
+          "drawWidthTiles": 1,
+          "solid": true
+        },
+        {
+          "asset": "lectern",
+          "footprint": [
+            10,
+            3,
+            1,
+            1
+          ],
+          "visualFeet": [
+            10.5,
+            3.95
+          ],
+          "drawWidthTiles": 1,
+          "solid": true
+        },
+        {
+          "asset": "specimen-dome",
+          "footprint": [
+            10,
+            5,
+            1,
+            1
+          ],
+          "visualFeet": [
+            10.5,
+            5.95
+          ],
+          "drawWidthTiles": 1,
+          "solid": true
+        },
+        {
+          "asset": "stool",
+          "footprint": [
+            7,
+            5,
+            1,
+            1
+          ],
+          "visualFeet": [
+            7.5,
+            5.95
+          ],
+          "drawWidthTiles": 0.75,
+          "solid": true
+        },
+        {
+          "asset": "fern",
+          "footprint": [
+            1,
+            7,
+            1,
+            1
+          ],
+          "visualFeet": [
+            1.5,
+            7.95
+          ],
+          "drawWidthTiles": 0.9,
+          "solid": true
+        },
+        {
+          "asset": "rug",
+          "footprint": [
+            6,
+            7,
+            2,
+            1
+          ],
+          "visualFeet": [
+            7.0,
+            7.95
+          ],
+          "drawWidthTiles": 2,
+          "solid": false
+        }
+      ],
+      "trigger": "Replace matching cosmetic LIVE_DOORS callback with interior travel; Enter-facing doorway, not walking through T terrain.",
+      "interiorId": "interior:lab"
+    },
+    {
+      "id": "cottage",
+      "size": [
+        9,
+        8
+      ],
+      "grid": [
+        "WWWWWWWWW",
+        "W.....FFW",
+        "WF....FFW",
+        "WFFF....W",
+        "W.FF....W",
+        "W......FW",
+        "W.......W",
+        "WWWWOOWWW"
+      ],
+      "spawn": [
+        4,
+        6
+      ],
+      "exitCells": [
+        [
+          4,
+          7
+        ],
+        [
+          5,
+          7
+        ]
+      ],
+      "returnMeadow": [
+        14,
+        5
+      ],
+      "floorTexture": "oak-light",
+      "wallTexture": "plaster-plain",
+      "placements": [
+        {
+          "asset": "bed",
+          "footprint": [
+            1,
+            2,
+            1,
+            2
+          ],
+          "visualFeet": [
+            1.5,
+            3.95
+          ],
+          "drawWidthTiles": 1.6,
+          "solid": true
+        },
+        {
+          "asset": "bookcase",
+          "footprint": [
+            6,
+            1,
+            2,
+            1
+          ],
+          "visualFeet": [
+            7.0,
+            1.95
+          ],
+          "drawWidthTiles": 1.5,
+          "solid": true
+        },
+        {
+          "asset": "dining-table",
+          "footprint": [
+            2,
+            3,
+            2,
+            2
+          ],
+          "visualFeet": [
+            3.0,
+            4.95
+          ],
+          "drawWidthTiles": 2,
+          "solid": true
+        },
+        {
+          "asset": "stove",
+          "footprint": [
+            7,
+            2,
+            1,
+            1
+          ],
+          "visualFeet": [
+            7.5,
+            2.95
+          ],
+          "drawWidthTiles": 1.25,
+          "solid": true
+        },
+        {
+          "asset": "kitchen-cabinet",
+          "footprint": [
+            6,
+            2,
+            1,
+            1
+          ],
+          "visualFeet": [
+            6.5,
+            2.95
+          ],
+          "drawWidthTiles": 1,
+          "solid": true
+        },
+        {
+          "asset": "fern",
+          "footprint": [
+            7,
+            5,
+            1,
+            1
+          ],
+          "visualFeet": [
+            7.5,
+            5.95
+          ],
+          "drawWidthTiles": 0.8,
+          "solid": true
+        },
+        {
+          "asset": "rug",
+          "footprint": [
+            4,
+            5,
+            2,
+            1
+          ],
+          "visualFeet": [
+            5.0,
+            5.95
+          ],
+          "drawWidthTiles": 2,
+          "solid": false
+        }
+      ],
+      "trigger": "Replace matching cosmetic LIVE_DOORS callback with interior travel; Enter-facing doorway, not walking through T terrain.",
+      "interiorId": "interior:cottage"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2022": true, "worker": true, "node": true },
+  "extends": "eslint:recommended",
+  "parserOptions": { "sourceType": "script" },
+  "rules": {
+    "no-unused-vars": ["warn", { "args": "none" }],
+    "no-undef": "off",
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "eqeqeq": "off"
+  },
+  "ignorePatterns": ["assets/", "atlas.js"]
+}

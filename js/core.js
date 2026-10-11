@@ -11,7 +11,7 @@ const SPECIES={"off-by-one":["Offbyonyx","#e0603a","Counts one too few or one to
  "infinite-loop":["Loopent","#7ae03a","Runs in circles. It never gets tired."],"type-mix-up":["Mixtype","#3ae0a0","Mixes numbers with text, then wonders why 7 + 2 is 72."],"scope":["Scopeling","#9aa0a6","Hides a variable where nobody can see it."]};
 // ---------- bug bank (JavaScript, easy). § marks the buggy line ----------
 const catList=()=>REG===2?CATS8:CATS;
-const TIER={"Double Trouble":1,"Damage Dealer":1,"Birthday Candles":1,"Pizza Party Problem":1,"The Silent Function":1,"Coin Collector Glitch":1,"Is It Legal to Drive?":1,"Hot or Not":1,"Hello, Nobody":1,"Times Table Twist":3};
+const TIER={"Coin Pouch":1,"Wrong Pocket":1,"Shy Greeter":1,"Moon Coins":1,"Name Swap":1,"Silent Doubler":1,"Double Trouble":1,"Damage Dealer":1,"Birthday Candles":1,"Pizza Party Problem":1,"The Silent Function":1,"Coin Collector Glitch":1,"Is It Legal to Drive?":1,"Hot or Not":1,"Hello, Nobody":1,"Times Table Twist":3};
 // ---------- state ----------
 // the save slot can be changed with ?save=name (the integration tests use their own slot)
 // ?dev = dev mode: hunts open straight on the fix step, no hearts lost, no net throw, an AUTO-FIX button and a skip to Region 2.
@@ -40,6 +40,9 @@ S.catches??=0;
 S.intro??=false;
 S.talked??=false;
 S.r1done??=false;
+S.starter??=null;   // the partner picked at the lab: "js", "py" or "lua"
+S.team??=S.starter?[S.starter]:[];   // every language you have a partner for (the starter first; the others join when you catch a Bug of their language)
+S.langCatch??={};   // Bugs caught per language
 const save=()=>{
   try{
     localStorage.setItem(SAVE_KEY,JSON.stringify(S))
@@ -59,8 +62,8 @@ const T=32;
 let W=32,H=24,REG=1;
 // Region 1 is a painted map (assets/meadow/meadow-map.jpg, 32x24 tiles); this grid is what you can walk on, laid over the painting.
 // . path  h lawn  g tall grass (wild Bugs)  T trees, rocks, fences  ~ water  L lab  P professor  V villager  s sign
-// 1 lantern  2 pump (and the pump keeper beside it)  3 bell  N Nullo  C Meadow Compiler  x/X the north-east trail to Syntax Forest (closed/open)
-const R1={start:[3,21],home:[4,6],nullo:[28,10],exit:[29,1],arrive:[29,2]};
+// 1 lantern  2 pump (and the pump keeper beside it)  3 bell  N Nullo  C Meadow Compiler  x/X the north-east trail to Syntax Forest (closed/open)  H the door of your house
+const R1={start:[3,21],home:[4,6],nullo:[28,10],exit:[29,1],arrive:[29,2],door:[18,6],out:[18,7]};   // door: your house (the blue-roofed cottage)
 const MEADOW=[
  "TTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTT",
  "TTTTTTTTT.TTTTTTTTTTTTTTTTTTTxTT",
@@ -68,8 +71,8 @@ const MEADOW=[
  "TLLLLLTTT.hTTTTTTTTTTTTTTTTTT..T",
  "TTT...hTT.TTTTTTTTTTTTTTTTTCTT.T",
  "TTTTPhhTT.TT3.hTTTTTTTTT.......T",
- "TTTT..hTT.....V.TTTTTTTTTTT.TTTT",
- "TTTT..hTT....V.VTTTTTTTTTTT..TTT",
+ "TTTT..hTT.....V.TTHTTTTTTTT.TTTT",
+ "TTTT..hTT...VV..hhhTTTTTTTT..TTT",
  "TTTTh1.....TTTTTTTTTTTTTTTTT.TTT",
  "TThhh1.Th..............hTTTT.TTT",
  "TTTTTTT...TTgggggghTTT....h.N.hT",
@@ -88,10 +91,10 @@ const MEADOW=[
  "TTT..TTTTTTTTTTTTTTTTTTTTTTTTTTT"];
 let M=MEADOW.map(r=>r.split(""));
 const REG1={M,W:32,H:24};
-const SOLID=new Set(["T","~","L","P","s","N","F","V","D","1","2","3","C","x","R","K","G","S","W","B"]);
+const SOLID=new Set(["T","~","L","P","s","N","F","V","D","1","2","3","C","x","R","K","G","S","W","B","Q","k","c","J","M","p","Y","e","n"]);   // Q..n: furniture and Mom, indoors (house.js)
 const GRASS=new Set(["g","f"]);
 // ---------- input ----------
-let mode="intro";// walk|battle|dialog|dex|end
+let mode="intro";// walk|battle|dialog|dex|starter
 const keys={};
 addEventListener("keydown",e=>{
   if(e.target&&e.target.tagName==="INPUT"){
@@ -112,22 +115,31 @@ addEventListener("keyup",e=>{
 // ---------- drawing ----------
 const cv=$("cv"),g=cv.getContext("2d");
 let SC=1;   // device pixels per world unit: the world is drawn at full screen resolution, so hi-res sprites stay sharp and pixel-art tiles stay crisp
+const screenBox=$("screen");
 function sizeCanvas(){
-  // Region 1 is one painting at ~45 px per tile, so it is shown near that size (more upscaling only blurs it);
-  // Region 2 is drawn from tiles and zooms in by whole steps
-  const d=Math.min(3,window.devicePixelRatio||1),zs=REG===1?Math.max(1.2,Math.min(2.6,innerWidth/700)):Math.max(1,Math.min(5,Math.round(innerWidth/480)));
+  // the zoom follows the SHORT side of the game screen, so a phone, a tablet and a wide monitor all see a sensible number of tiles:
+  // Region 1 is one painting at ~45 px per tile (more upscaling only blurs it); Region 2 is drawn from tiles and zooms by whole steps;
+  // your house is small, so it is zoomed to fill the screen
+  const d=Math.min(3,window.devicePixelRatio||1),vw=Math.max(1,screenBox.clientWidth),vh=Math.max(1,screenBox.clientHeight),short=Math.min(vw,vh);
+  const tiles=short<520?9.5:short<820?11:13;
+  // indoors the room is fitted to the screen; on a tall phone screen that would be tiny, so it zooms in and the camera follows you
+  const fitRoom=Math.min(vw/((W+1)*T),vh/((H+1.4)*T)),zs=REG===0?Math.max(1,Math.min(4.5,vh>vw?Math.max(fitRoom,vw/(7*T)):fitRoom))
+   :REG===1?Math.max(1,Math.min(2.6,short/(tiles*T)))
+   :Math.max(1,Math.min(5,Math.round(short/(tiles*T))));
   SC=zs*d;
-  cv.width=Math.round(innerWidth*d);
-  cv.height=Math.round(innerHeight*d);
+  cv.width=Math.round(vw*d);
+  cv.height=Math.round(vh*d);
   cv.style.width="100%";
   cv.style.height="100%";
   g.imageSmoothingEnabled=false
 }
 sizeCanvas();
-addEventListener("resize",()=>{
+// the game screen changes size with the window, the phone's rotation, the layout and the on-screen keyboard
+new ResizeObserver(()=>{
   sizeCanvas();
-  if(typeof fitField==="function")fitField()
-});
+  if(typeof fitField==="function")fitField();
+  if(typeof sizeNet==="function")sizeNet()
+}).observe(screenBox);
 const P={x:R1.start[0],y:R1.start[1],dir:0,prog:0,moving:false,nx:0,ny:0,steps:0,walk:0,ox:R1.start[0],oy:R1.start[1],wait:0};
 const BYT={x:R1.start[0],y:R1.start[1]};
 const DIRS=[[0,-1],[1,0],[0,1],[-1,0]];

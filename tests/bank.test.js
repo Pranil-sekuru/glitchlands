@@ -16,6 +16,26 @@ function run(code) {
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+// Lua bugs run in Fengari (the same VM the game uses, vendored in /vendor). Python bugs are checked by tests/test_bank_py.py.
+globalThis.window = globalThis;   // the Fengari bundle attaches itself to `window`
+const fengari = isNode ? require(require("path").join(__dirname, "..", "vendor", "fengari-web.js")) : (load("vendor/fengari-web.js"), globalThis.fengari);
+function runLua(code) {
+  const { lua, lauxlib, lualib, to_luastring } = fengari, out = [], L = lauxlib.luaL_newstate();
+  lualib.luaL_openlibs(L);
+  let steps = 0;   // endless loops are stopped by an instruction-count hook
+  lua.lua_sethook(L, () => { if (++steps > 2000) lauxlib.luaL_error(L, to_luastring("loop")); }, lua.LUA_MASKCOUNT, 1000);
+  lua.lua_pushjsfunction(L, L2 => {
+    const n = lua.lua_gettop(L2), parts = [];
+    for (let i = 1; i <= n; i++) { lauxlib.luaL_tolstring(L2, i); parts.push(lua.lua_tojsstring(L2, -1)); lua.lua_pop(L2, 1); }
+    out.push(parts.join("\t")); return 0;
+  });
+  lua.lua_setglobal(L, to_luastring("print"));
+  let st = lauxlib.luaL_loadstring(L, to_luastring(code));
+  if (st === lua.LUA_OK) st = lua.lua_pcall(L, 0, 0, 0);
+  return st === lua.LUA_OK ? { ok: true, out } : { ok: false, err: lua.lua_tojsstring(L, -1), out };
+}
+const PRINT = { js: /console\.log/, py: /\bprint\s*\(/, lua: /\bprint\s*\(/ };
+
 let failed = 0, passed = 0;
 function check(name, cond, msg) { if (cond) passed++; else { failed++; say("FAIL", name, "-", msg); } }
 
@@ -30,11 +50,15 @@ BANK.forEach(b => {
   check(t, !b.code.includes("§"), "marker left in code");
   const fixed = lines.slice(); fixed[b.bug_line - 1] = lines[b.bug_line - 1].match(/^\s*/)[0] + b.fix.trim();
   const ex = b.extra ? "\n" + b.extra : "";
-  const f = run(fixed.join("\n") + ex), u = run(b.code + ex);
-  check(t, f.ok && same(f.out, b.out), "fixed program must print `out`; got " + JSON.stringify(f.out) + " " + (f.err || ""));
-  check(t, !(u.ok && same(u.out, b.out)), "buggy program must NOT already print `out`");
-  // anti-cheat: the real fix may not rely on extra console.log lines
-  check(t, !/console\.log/.test(b.fix) || /console\.log/.test(lines[b.bug_line - 1]), "fix should not add output");
+  check(t, ["js", "py", "lua"].includes(b.lang), "unknown language " + b.lang);
+  if (b.lang !== "py") {
+    const exec = b.lang === "lua" ? runLua : run, f = exec(fixed.join("\n") + ex), u = exec(b.code + ex);
+    check(t, f.ok && same(f.out, b.out), "fixed program must print `out`; got " + JSON.stringify(f.out) + " " + (f.err || ""));
+    check(t, !(u.ok && same(u.out, b.out)), "buggy program must NOT already print `out`");
+  }
+  // anti-cheat: the real fix may not rely on extra print lines
+  const pr = PRINT[b.lang] || PRINT.js;
+  check(t, !pr.test(b.fix) || pr.test(lines[b.bug_line - 1]), "fix should not add output");
 });
 // fairness: the "name the mistake" step must never offer a decoy that honestly describes the same bug
 BANK.forEach(b => {
@@ -49,6 +73,10 @@ BANK.forEach(b => {
 });
 check("bank", BANK.length >= 30, "expected at least 30 bugs, got " + BANK.length);
 check("bank", BANK.some(b => b.quest) && BANK.some(b => b.quest2), "quest bugs missing");
+["js", "py", "lua"].forEach(l => {
+  check("bank", BANK.filter(b => b.lang === l && !b.quest && !b.quest2).length >= 8, "at least 8 wild " + l + " bugs");
+  check("bank", BANK.some(b => b.lang === l && b.tut), "a practice-round bug for " + l);
+});
 
 say(passed + " checks passed, " + failed + " failed (" + BANK.length + " bugs)");
 if (failed) { if (isNode) process.exit(1); else throw new Error("tests failed"); }

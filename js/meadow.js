@@ -7,7 +7,7 @@ const MAP1=document.createElement("canvas");   // the painting at its own resolu
 const MSYS={lamp:[2,5.64,10.2,1.55],pump:[4,13.7,14.75,2.8],bell:[6,12.04,6.45,2.7]};
 // the professor and villagers are live sprites (npc and villager sheets) standing where the painting had them: [x, feet y] in tiles, facing, look
 const PROF_AT=[4.75,5.6];
-const VILLAGERS=[[14.74,6.72,2,0],[13.66,7.52,2,1],[15.8,7.52,3,2],[12.22,14.84,1,1]];
+const VILLAGERS=[[14.74,6.72,2,0],[13.66,7.52,2,1],[12.7,7.52,2,2],[12.22,14.84,1,1]];   // the third stands aside so the path to your house is clear
 const COMPILER_AREA=[23,0,9,9];          // tiles [x, y, w, h]: the Compiler and the north-east trail, purple until it is repaired
 function buildMeadow(){
   if(!MI.map)return;
@@ -32,7 +32,9 @@ function drawMeadowWorld(t,dt,cx,cy,VWp,VHp,fpx,fpy){
   g.imageSmoothingEnabled=true;
   g.imageSmoothingQuality="high";
   g.drawImage(MAP1,-cx,-cy,REG1.W*T,REG1.H*T);
-  const bmv=followByte(dt),q=S.q,spr=[],now=performance.now();
+  drawVillageAmbient(t,cx,cy,VWp,VHp);
+  drawVillageDoors(t,cx,cy);
+  const bmv=S.starter?followByte(dt):false,q=S.q,spr=[],now=performance.now();
   drawPuffs(g,cx,cy);
   const put=(i,cxT,botT,wT)=>{
     const r=MR.sys[i],dw=wT*T,dh=r[3]*dw/r[2];
@@ -48,8 +50,8 @@ function drawMeadowWorld(t,dt,cx,cy,VWp,VHp,fpx,fpy){
     spr.push({y:d[2]*T,f:()=>put(d[0],d[1],d[2],d[3])})
   });
   const at=(x,y)=>[x*T-16-cx,y*T-31-cy];   // actor() takes the top-left of a tile; these spots are given by the feet
-  spr.push({y:PROF_AT[1]*T,f:()=>actor(g,"prof",...at(PROF_AT[0],PROF_AT[1]),2,false,t,{tag:"PROF. SEMICOLON",bang:!S.talked})});
-  VILLAGERS.forEach(v=>spr.push({y:v[1]*T,f:()=>actor(g,"villager",...at(v[0],v[1]),v[2],false,t,{sheet:villagerLook(v[3])})}));
+  drawNPCs(spr,t,cx,cy);   // the Prof (physics.js): a round body who turns to look at you
+  LIFE.people.forEach(p=>spr.push({y:p.y*T,f:()=>actor(g,"villager",...at(p.x,p.y),p.dir,p.moving,p.frame,{sheet:villagerLook(p.look)})}));
   spr.sort((a,b)=>a.y-b.y).forEach(s=>s.f());
   const px=PROF_AT[0]*T-cx,py=PROF_AT[1]*T-cy;
   // purple corruption still writhing around what is broken (and over the blocked north-east trail)

@@ -35,7 +35,7 @@ function say(lines,after){
     type()
   };
   show();
-  $("stage").appendChild(box);
+  dlgHost().appendChild(box);   // on a phone held upright, dialogue appears on the bottom screen
   box.advance=()=>{
     if(typing()){   // the first press finishes the line, the next one moves on
       shown=full.length;
@@ -55,13 +55,23 @@ function say(lines,after){
   dlg=box
 }
 const sysBug=t=>BANK.find(b=>b.title===t);
+// the first visit: the Prof explains languages and partners, then you pick one
+function starterTalk(){
+  say(["PROF. SEMICOLON: Ah, there you are! Welcome, young Debugger. I'm Prof. Semicolon.","Since the Great Compiler crashed, Bugs have been crawling out of every program. And every Bug is written in a programming language: JavaScript, Python or Lua.","No Debugger should hunt alone. These three partners each speak one language fluently.","When you meet a Bug in your partner's language, your partner helps you: all three hints, a clear explanation of every failed run, and one extra try.","Bugs in other languages are harder: just one hint. But catch one, and a partner who speaks that language will join your team!","So, which partner will you take?"],()=>openStarter(l=>{
+    say([`PROF. SEMICOLON: ${PETS[l].name} it is! ${PETS[l].name} speaks ${LANGS[l].name}. You two will make a fine team.`,`${PETS[l].name} hops onto your shoulder and chirps happily.`],()=>profTalk())
+  }))
+}
 function profTalk(){
+  if(!S.starter){
+    starterTalk();
+    return
+  }
   const n=qFixed();
   if(!S.q.on){
     S.q.on=true;
     save();
     hud();
-    say(["PROF. SEMICOLON: Ah, a Debugger! The Great Compiler crashed, and glitches are creeping through our village. See the corrupted colours?","Three systems have broken: the lantern at the foot of my hill, the bell in the village square, and the water pump in the yard below the square.","Walk up to each one and press Enter. A Bug is hiding in its code. Find the line, name the mistake, then FIX it and run it.","The tall grass hides wild Bugs too: good practice, and they fill your Bugdex. If a fix fails, ask Byte why!"]);
+    say(["PROF. SEMICOLON: Ah, a Debugger! The Great Compiler crashed, and glitches are creeping through our village. See the corrupted colours?","Three systems have broken: the lantern at the foot of my hill, the bell in the village square, and the water pump in the yard below the square.","Walk up to each one and press Enter. A Bug is hiding in its code. Find the line, name the mistake, then FIX it and run it.","The lantern speaks JavaScript, the pump Python and the bell Lua. Bugs in "+langName(S.starter)+" are "+petName(S.starter)+"'s speciality; for the others, catch a wild Bug of that language in the tall grass and a new partner will join you.","If a fix fails, ask your partner why!"]);
     return
   }
   if(S.q.done){
@@ -84,15 +94,37 @@ function sysTalk(sy){
     return
   }
   if(!S.q.on){
-    say([sy.name+": it's flickering and spitting corrupted pixels. Prof. Semicolon (white hair, by the lab hill) might know why."]);
+    say([sy.name+": it's flickering and spitting corrupted pixels. Prof. Semicolon (white hair, by the lab on the north-west hill) might know why."]);
     return
   }
   say(sy.intro,()=>startBattle(false,{bug:sysBug(sy.bug),quest:sy.key,label:sy.label}))
 }
+// someone with a round body (physics.js) in front of you: they turn to you and talk
+function talkNPC(n){
+  n.talking=true;
+  if(n.id==="prof"){
+    S.talked=true;
+    save();
+    profTalk()
+  }else if(n.id==="mom")momTalk();
+  else if(n.line)say([n.line])
+}
 function interact(){
   if(REG===2)return interact2();
+  if(REG===0)return interactHouse();
   P.act={t0:performance.now()};
-  const nx=P.x+DIRS[P.dir][0],ny=P.y+DIRS[P.dir][1],c=(M[ny]||[])[nx];
+  const who=npcInFront();
+  if(who){
+    talkNPC(who);
+    return
+  }
+  if(villageTalk())return;
+  const {nx,ny,c}=facingTile();
+  const nearbyDoor=LIVE_DOORS.find(d=>d.id!=="home"&&Math.hypot(P.px-d.x,P.py+PHYS.feet-d.y)<1.6);
+  if(nearbyDoor&&["L","T"].includes(c)){
+    beginDoorTravel(nearbyDoor.id,()=>enterRoom(nearbyDoor.id));   // the lab and the cottage are rooms you can walk into (house.js)
+    return;
+  }
   if(c=="P"){
     S.talked=true;
     save();
@@ -101,10 +133,6 @@ function interact(){
   }
   if(c=="s"){
     say(["SIGN: MEADOW MAINFRAME. North-west: Prof. Semicolon's lab. North: the village square. Tall grass: wild Bugs. East stairs: the Meadow Compiler."]);
-    return
-  }
-  if(c=="V"){
-    say([{14:"VILLAGER: An Offbyonyx skipped the last song on my playlist! Count carefully out there.",13:"VILLAGER: Tip: the Expected and Got lines tell you what the Bug did wrong.",15:"VILLAGER: The tall grass south of here is crawling with Bugs. Good practice, if you're brave!"}[nx]||"VILLAGER: Hello, Debugger!"]);
     return
   }
   if(c=="L"){

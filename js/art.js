@@ -26,6 +26,7 @@ function loadArt(dir,files,into,then){
 loadArt("meadow",MEA,MI,()=>{
   artReady=true;
   rebuild();
+  if(typeof hud==="function")hud();   // the team portraits need the partner art
   loadArt("forest",FOR,FI,rebuild)
 });
 const CC={};

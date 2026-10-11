@@ -18,8 +18,8 @@ function actor(c,who,x,y,dir,mv,t,o={}){
   c.imageSmoothingQuality="high";
   c.drawImage(img,r[0],r[1],r[2],r[3],fx-dw/2,fy-dh,dw,dh);
   c.restore();
-  if(o.tag)nameTag(c,fx,fy-dh-4,o.tag);
-  if(o.bang&&MI.fx){
+  if(o.tag&&o.showTag)nameTag(c,fx,fy-dh-4,o.tag);   // names and "!" markers are off: nothing floats over the world
+  if(o.bang&&o.showTag&&MI.fx){
     const r2=MR.fx[7*8+2],s=15/r2[3];
     c.drawImage(MI.fx,r2[0],r2[1],r2[2],r2[3],fx-r2[2]*s/2,fy-dh-20-Math.abs(Math.sin(t/260))*5,r2[2]*s,15)
   }
@@ -39,7 +39,7 @@ function actorHi(c,who,x,y,dir,mv,t,o={}){
   c.imageSmoothingQuality="high";
   c.drawImage(img,r[0],r[1],r[2],r[3],fx-dw/2,fy-dh,dw,dh);
   c.restore();
-  if(o.tag)nameTag(c,fx,fy-dh-4,o.tag)
+  if(o.tag&&o.showTag)nameTag(c,fx,fy-dh-4,o.tag)
 }
 function nameTag(c,x,y,text){
   c.font="bold 10px 'Courier New'";
@@ -50,24 +50,26 @@ function nameTag(c,x,y,text){
   c.fillStyle="#fff";
   c.fillText(text,x,y)
 }
-// Byte, the golden beetle: trails the player one step behind
+// your lead partner (the starter you picked at the lab) walks the path you walked, one body-length behind
+// (BYT is the top-left of its sprite box, in tiles, like an actor's tile position)
 let bDir=2;
 function followByte(dt){
-  const k=1-Math.exp(-dt/110),bdx=P.ox-BYT.x,bdy=P.oy-BYT.y;
-  if(Math.abs(bdx)+Math.abs(bdy)>4){
-    BYT.x=P.ox;
-    BYT.y=P.oy
+  const [tx,ty]=trailPoint(.8),bx=BYT.x+.5,by=BYT.y+.62,dx=tx-bx,dy=ty-by,k=1-Math.exp(-dt/45);
+  if(Math.hypot(dx,dy)>3){
+    BYT.x=tx-.5;
+    BYT.y=ty-.62
   }else{
-    BYT.x+=bdx*k;
-    BYT.y+=bdy*k
+    BYT.x+=dx*k;
+    BYT.y+=dy*k
   }
-  const mv=Math.abs(bdx)+Math.abs(bdy)>0.06;
-  if(mv)bDir=Math.abs(bdx)>Math.abs(bdy)?(bdx>0?1:3):(bdy>0?2:0);
+  const mv=Math.hypot(dx,dy)*1000/Math.max(dt,1)>.5&&Math.hypot(dx,dy)>.01;
+  if(mv)bDir=Math.abs(dx)>Math.abs(dy)?(dx>0?1:3):(dy>0?2:0);
   return mv
 }
 function byteSprite(c,t,cx,cy,mv){
-  actor(c,"byte",Math.round(BYT.x*T)-cx,Math.round(BYT.y*T)-cy,bDir,mv,t);
-  c.fillStyle="#fff2a0";
+  if(!S.starter)return;
+  actor(c,"byte",Math.round(BYT.x*T)-cx,Math.round(BYT.y*T)-cy,bDir,mv,t,{sheet:petSheet(S.starter)});
+  c.fillStyle=S.starter==="js"?"#fff2a0":S.starter==="py"?"#cfe6ff":"#e4dcff";
   const x=Math.round(BYT.x*T)-cx,y=Math.round(BYT.y*T)-cy;
   for(let i=0;i<3;i++){
     const a=t/300+i*2.1;
@@ -256,6 +258,22 @@ function foeFrame(t){
     c.imageSmoothingQuality="high";
     c.drawImage(MI.hero,r[0],r[1],r[2],r[3],mx-r[2]*k/2+lunge*.5,my-r[3]*k-lunge,r[2]*k,r[3]*k)
   }
+  // the partner who speaks the Bug's language stands beside you; if nobody does, your starter waits, faded, with a question mark
+  const pl=bs.partner||S.starter;
+  if(pl){
+    const px=mx+ref*.21,py=my+ref*.01,ph=hh*.55;
+    c.fillStyle="rgba(0,0,0,.28)";
+    c.beginPath();
+    c.ellipse(px,py,ph*.42,ph*.11,0,0,7);
+    c.fill();
+    petFrame(c,pl,px,py,ph,0,t,false,!bs.partner);
+    if(!bs.partner){
+      c.fillStyle="#fff";
+      c.font="bold "+Math.round(ph*.5)+"px 'Courier New',monospace";
+      c.textAlign="center";
+      c.fillText("?",px,py-ph*1.05)
+    }
+  }
   // your hearts, floating right above your Debugger (icons from the meadow effects sheet)
   if(!bs.tut&&MI.fx){
     const hf=MR.fx[7*8],he=MR.fx[7*8+1],fs=Math.round(ref/8),hw=fs*hf[2]/hf[3],gap=hw*1.05,hx0=mx-(bs.max*gap)/2+(gap-hw)/2,hy0=my-hh-fs*1.25;
@@ -268,12 +286,14 @@ function foeFrame(t){
   }
 }
 function draw(t,dt){
-  const ox=P.moving?DIRS[P.dir][0]*P.prog*T:0,oy=P.moving?DIRS[P.dir][1]*P.prog*T:0;
   g.setTransform(SC,0,0,SC,0,0);
   g.imageSmoothingEnabled=false;
-  const VWp=cv.width/SC,VHp=cv.height/SC,snap=v=>Math.round(v*SC)/SC,fpx=P.x*T+ox,fpy=P.y*T+oy;
+  // fpx, fpy: the top-left of the player's sprite box (the sprite's feet sit PHYS.feet below the collision centre P.px, P.py)
+  const VWp=cv.width/SC,VHp=cv.height/SC,snap=v=>Math.round(v*SC)/SC,fpx=(P.px-.5)*T,fpy=(P.py-.62)*T;
   const cx=snap(W*T<=VWp?-(VWp-W*T)/2:Math.max(0,Math.min(W*T-VWp,fpx-VWp/2+16))),cy=snap(H*T<=VHp?-(VHp-H*T)/2:Math.max(0,Math.min(H*T-VHp,fpy-VHp/2+16)));
   g.fillStyle="#0b1a14";
   g.fillRect(0,0,VWp,VHp);
-  (REG===2?drawForestWorld:drawMeadowWorld)(t,dt,cx,cy,VWp,VHp,fpx,fpy);
+  (REG===2?drawForestWorld:REG===0?drawHouse:drawMeadowWorld)(t,dt,cx,cy,VWp,VHp,fpx,fpy);
+  drawLeaves(g,cx,cy);
+  if(REG===0)drawRoomDoor(t,cx,cy);
 }

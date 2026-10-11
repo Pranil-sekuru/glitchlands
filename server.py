@@ -36,14 +36,18 @@ LLM_DEFAULT_MODEL = "openai/gpt-oss-120b"
 CATS = ["off-by-one", "wrong-operator", "wrong-variable", "bad-condition", "missing-return", "infinite-loop"]
 DIFFICULTIES = ("easy", "medium", "hard")
 MAX_BODY = 2048
-GZIP_TYPES = (".html", ".js", ".css", ".json", ".txt", ".md")
+GZIP_TYPES = (".html", ".js", ".css", ".json", ".txt", ".md", ".wasm")
 # Pages may only load their own scripts/styles/images/workers and talk to this server. The player's code runs in runner.js,
 # which is served with default-src 'none' (no network, no nested workers) and only 'unsafe-eval' so it can run the program.
 PAGE_CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; worker-src 'self'; "
             "connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'")
 RUNNER_CSP = "default-src 'none'; script-src 'unsafe-eval'"
+# Python (Pyodide) and Lua (Fengari) runners may load only this site's own vendored runtime: no other origin is reachable.
+# Pyodide also fetches its .wasm and standard library from /vendor, so it gets connect-src 'self'; once loaded it deletes every network API.
+LANG_RUNNER_CSP = {"runner-py.js": "default-src 'none'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src 'self'",
+                   "runner-lua.js": "default-src 'none'; script-src 'self' 'unsafe-eval'"}
 MIME = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg",
-        ".json": "application/json", ".txt": "text/plain; charset=utf-8", ".md": "text/plain; charset=utf-8"}
+        ".json": "application/json", ".wasm": "application/wasm", ".zip": "application/zip", ".txt": "text/plain; charset=utf-8", ".md": "text/plain; charset=utf-8"}
 
 SYSTEM = """You design ONE broken JavaScript program for a beginner debugging game. Reply with ONLY a JSON object (no prose, no code fences) with exactly these keys:
 {"title": spoiler-free fun name that does not hint at the bug type,
@@ -205,17 +209,35 @@ LIMITER = Limiter(int_env("BHA_RATE_PER_MIN", 6), int_env("BHA_DAILY_CAP", 400))
 GZIP_MIME = {MIME[e].split(";")[0] for e in GZIP_TYPES}
 
 
+_GZ = {}
+_GZ_LOCK = threading.Lock()
+
+
+def gzipped(data, etag=None):
+    """gzip a response; files (which carry an etag) are compressed once and kept in memory."""
+    if not etag:
+        return gzip.compress(data, 6)
+    with _GZ_LOCK:
+        hit = _GZ.get(etag)
+    if hit is None:
+        hit = gzip.compress(data, 6)
+        with _GZ_LOCK:
+            _GZ[etag] = hit
+    return hit
+
+
 def safe_path(path):
-    """Map a URL path to a file under HERE, or None. Only the pages and assets/ are public."""
+    """Map a URL path to a file under HERE, or None. Only the pages, assets/ and vendor/ are public."""
     name = path.lstrip("/") or "index.html"
     if re.fullmatch(r"([A-Za-z0-9_-]+\.(html|css)|(js/)?[A-Za-z0-9_-]+\.js)", name):
         f = os.path.join(HERE, name)
         return f if os.path.isfile(f) else None
-    if name.startswith("assets/"):
-        root = os.path.realpath(os.path.join(HERE, "assets"))
-        f = os.path.realpath(os.path.join(root, name[len("assets/"):]))
-        if f.startswith(root + os.sep) and os.path.isfile(f):
-            return f
+    for top in ("assets", "vendor"):   # art, and the vendored Python / Lua runtimes
+        if name.startswith(top + "/"):
+            root = os.path.realpath(os.path.join(HERE, top))
+            f = os.path.realpath(os.path.join(root, name[len(top) + 1:]))
+            if f.startswith(root + os.sep) and os.path.isfile(f):
+                return f
     return None
 
 
@@ -227,7 +249,7 @@ class H(BaseHTTPRequestHandler):
         headers = {"content-type": ctype, "cache-control": cache, "x-content-type-options": "nosniff", "referrer-policy": "no-referrer"}
         headers.update(extra or {})
         if len(data) > 1024 and ctype.split(";")[0] in GZIP_MIME and "gzip" in self.headers.get("accept-encoding", ""):
-            data = gzip.compress(data, 6)
+            data = gzipped(data, headers.get("etag"))
             headers["content-encoding"] = "gzip"
             headers["vary"] = "accept-encoding"
         self.send_response(code)
@@ -255,15 +277,20 @@ class H(BaseHTTPRequestHandler):
                 data = fh.read()
             ext = os.path.splitext(f)[1].lower()
             etag = '"%s"' % hashlib.sha1(data).hexdigest()[:16]
-            fresh = ext in (".html", ".js", ".css")   # code: always revalidate; art: cache for a day
+            vendored = path.startswith("/vendor/")
+            fresh = ext in (".html", ".js", ".css") and not vendored   # code: always revalidate; art: a day; pinned runtimes: a week
+            cache = "no-cache" if fresh else ("public, max-age=604800" if vendored else "public, max-age=86400")
             extra = {"etag": etag}
+            base = os.path.basename(f)
             if ext == ".html":
                 extra["content-security-policy"] = PAGE_CSP
-            elif os.path.basename(f) == "runner.js":
+            elif base == "runner.js":
                 extra["content-security-policy"] = RUNNER_CSP
+            elif base in LANG_RUNNER_CSP and not vendored:
+                extra["content-security-policy"] = LANG_RUNNER_CSP[base]
             if self.headers.get("if-none-match") == etag:
-                return self._send(304, b"", MIME.get(ext, "application/octet-stream"), "no-cache" if fresh else "public, max-age=86400", extra)
-            return self._send(200, data, MIME.get(ext, "application/octet-stream"), "no-cache" if fresh else "public, max-age=86400", extra)
+                return self._send(304, b"", MIME.get(ext, "application/octet-stream"), cache, extra)
+            return self._send(200, data, MIME.get(ext, "application/octet-stream"), cache, extra)
         self._send(404, {"error": "not found"})
 
     def do_POST(self):

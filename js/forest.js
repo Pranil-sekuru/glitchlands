@@ -57,23 +57,31 @@ function questText2(){
 }
 // ---- travel between regions ----
 function rebuild(){
-  REG===2?buildForest():buildMeadow()
+  if(REG===2)buildForest();
+  else if(REG===1)buildMeadow()
 }
 function setRegion(n){
   REG=n;
-  sizeCanvas();
-  const R=n===1?REG1:REG2;
+  const R=n===0?REG0:n===1?REG1:REG2;
   M=R.M;
   W=R.W;
   H=R.H;
+  sizeCanvas();
   if(n===2)syncForest();
   rebuild();
-  S.region=n
+  S.region=n;
+  regionTitle(n===0?roomKey():n)
 }
 function placeAt(x,y,dir){
-  Object.assign(P,{x,y,ox:x,oy:y,dir,moving:false,prog:0,wait:0,steps:0});
-  BYT.x=x;
-  BYT.y=y;
+  // stand on tile (x, y): the feet circle sits in the lower part of the tile, as the sprites always have
+  const bx=x-DIRS[dir][0],by=y-DIRS[dir][1],free=bx>=0&&by>=0&&bx<W&&by<H&&!SOLID.has(M[by][bx]),ox=free?bx:x,oy=free?by:y;
+  Object.assign(P,{x,y,ox,oy,dir,px:x+.5,py:y+.62,vx:0,vy:0,moving:false,steps:0});
+  if(!GRASS.has((M[y]||[])[x]))P.lastSafe=[P.px,P.py];
+  // your partner appears on the tile behind you (if it can stand there), not on top of you
+  BYT.x=ox;
+  BYT.y=oy;
+  trailReset(ox+.5,oy+.62);
+  TRAIL.push([P.px,P.py]);
   PUFFS.length=0
 }
 function syncGates(){
@@ -108,7 +116,7 @@ function rangerTalk(){
     q.on=true;
     save();
     hud();
-    say(["RANGER: A Debugger! Thank goodness. I'm the keeper of this forest, and its systems have failed.","Three things are broken. The LANTERNS in the clearing east of my hut. The RELAY up in the north-west, pulsing corruption into the stream. And the BRIDGE CONTROLS on this side of the water.","Fix all three and the root gate will answer you. But beware: my old apprentice Nullo means to reach the shrine first.","Walk up to each broken thing and press Enter. The grass patches hide wild Bugs too. Byte will explain any failing test."]);
+    say(["RANGER: A Debugger! Thank goodness. I'm the keeper of this forest, and its systems have failed.","Three things are broken. The LANTERNS in the clearing east of my hut. The RELAY up in the north-west, pulsing corruption into the stream. And the BRIDGE CONTROLS on this side of the water.","Fix all three and the root gate will answer you. But beware: my old apprentice Nullo means to reach the shrine first.","Walk up to each broken thing and press Enter. The grass patches hide wild Bugs too. Your partners will explain any failing test in their language."]);
     return
   }
   if(q.done){
@@ -132,7 +140,7 @@ function checklist(){
 }
 function interact2(){
   P.act={t0:performance.now()};
-  const nx=P.x+DIRS[P.dir][0],ny=P.y+DIRS[P.dir][1],c=(M[ny]||[])[nx],q=S.q2;
+  const {nx,ny,c}=facingTile(),q=S.q2;
   const fixBattle=(key,title,label,intro,lives)=>say(intro,()=>startBattle(false,{bug:byTitle(title),quest:key,label,lives}));
   if(c==="W"){
     rangerTalk();
@@ -371,7 +379,7 @@ function drawForestWorld(t,dt,cx,cy,VWp,VHp,fpx,fpy){
   g.imageSmoothingEnabled=true;
   g.imageSmoothingQuality="high";
   g.drawImage(MAP2,-cx,-cy,FW*T,FH*T);
-  const bmv=followByte(dt);
+  const bmv=S.starter?followByte(dt):false;
   drawPuffs(g,cx,cy);
   const q=S.q2,spr=[],now=performance.now();
   const pbox=[fpx-cx-14,fpy-cy-48,28,52];   // where the player stands on screen (for see-through crowns)
@@ -380,7 +388,6 @@ function drawForestWorld(t,dt,cx,cy,VWp,VHp,fpx,fpy){
   const ws=wardenSheet();
   spr.push({y:28*T+T,f:()=>{
     if(ws)actorHi(g,"warden",10*T-cx,28*T-cy,3,false,t,{tag:"RANGER",sheet:ws});
-    if(!q.on)iconHi(g,7,0,10*T+16-cx,28*T-44-cy+Math.sin(t/260)*3,22)
   }});
   if(M[13][39]==="N")spr.push({y:13*T+T,f:()=>actor(g,"nullo",39*T-cx,13*T-cy,0,false,t,{tag:"NULLO"})});
   const drawP=(i,pcx,by,w,alpha)=>{
@@ -402,8 +409,6 @@ function drawForestWorld(t,dt,cx,cy,VWp,VHp,fpx,fpy){
     spr.push({y:(sp.by+1)*T,f:()=>{
       drawP(i,sp.cx,sp.by,sp.w,false);
       const top=(sp.by+1)*T-cy-FR.props[i][3]*(sp.w*T/FR.props[i][2])+Math.sin(t/300)*2;
-      if(sp.id==="gate"&&!gateOpen())iconHi(g,7,3,sp.cx*T-cx,top-6,22);
-      if(sp.id==="chest"&&!q.chest&&q.bridge)iconHi(g,7,0,sp.cx*T-cx,top-4,16);
       if((sp.id==="lantern"&&q.lantern)||(sp.id==="relay"&&q.relay)||(sp.id==="compiler"&&q.done)){
         g.globalAlpha=.5+.2*Math.sin(t/400);
         iconHi(g,4,0,sp.cx*T-cx,(sp.by-.9)*T-cy,80);

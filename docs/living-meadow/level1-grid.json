@@ -1,0 +1,437 @@
+{
+  "version": 1,
+  "coordinateSystem": {
+    "origin": "top-left",
+    "x": "right",
+    "y": "down",
+    "indexing": "zero-based",
+    "gridAccess": "M[y][x]",
+    "columns": 32,
+    "rows": 24,
+    "tileWorldPixels": 32,
+    "worldPixels": [
+      1024,
+      768
+    ],
+    "mapImagePixels": [
+      1448,
+      1086
+    ],
+    "mapPixelsPerTile": 45.25,
+    "feetTileRule": "floor(feetX), floor(feetY - 0.05)"
+  },
+  "map": [
+    "TTTTTTTTT.TTTTTTTTTTTTTTTTTTTTTT",
+    "TTTTTTTTT.TTTTTTTTTTTTTTTTTTTxTT",
+    "TLLLLLTTT.TTTTTTTTTTTTTTTTTTT.TT",
+    "TLLLLLTTT.hTTTTTTTTTTTTTTTTTT..T",
+    "TTT...hTT.TTTTTTTTTTTTTTTTTCTT.T",
+    "TTTTPhhTT.TT3.hTTTTTTTTT.......T",
+    "TTTT..hTT.....V.TTHTTTTTTTT.TTTT",
+    "TTTT..hTT...VV..hhhTTTTTTTT..TTT",
+    "TTTTh1.....TTTTTTTTTTTTTTTTT.TTT",
+    "TThhh1.Th..............hTTTT.TTT",
+    "TTTTTTT...TTgggggghTTT....h.N.hT",
+    "TTTTTTTTT.TTggggggggTTTTT..T.TTT",
+    "TTT~~~TTT.sTgTgggggghThghh...TTT",
+    "TTh~~~TTT.TTT222hggggggghhTh..TT",
+    "ThhTTh~TT...2TTThggggggghTThh..T",
+    "TTTT.......hTTTTggggggggTTTTThhT",
+    "TT...hhT~~...hhTTTThhTTTT~~TTThT",
+    "TTT.TTTTTTTT.....TThTTT~~~~~~TTT",
+    "TTh.TTTTTTTTTTTTThhhT~~~~~~~~TTT",
+    "TTT.TTTTTTTTTTTTThTThT~~~~~~TTTT",
+    "TTT.TTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTT.hTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTT..TTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "TTT..TTTTTTTTTTTTTTTTTTTTTTTTTTT"
+  ],
+  "terrainSolidSymbols": [
+    "T",
+    "~",
+    "L",
+    "P",
+    "s",
+    "N",
+    "F",
+    "V",
+    "D",
+    "1",
+    "2",
+    "3",
+    "C",
+    "x",
+    "R",
+    "K",
+    "G",
+    "S",
+    "W",
+    "B",
+    "Q",
+    "k",
+    "c",
+    "J",
+    "M",
+    "p",
+    "Y"
+  ],
+  "dynamicNpcMarker": "V",
+  "objects": [
+    {
+      "id": "Professor interaction",
+      "symbol": "P",
+      "cells": [
+        [
+          4,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "Village sign",
+      "symbol": "s",
+      "cells": [
+        [
+          10,
+          12
+        ]
+      ]
+    },
+    {
+      "id": "Lantern repair",
+      "symbol": "1",
+      "cells": [
+        [
+          5,
+          8
+        ],
+        [
+          5,
+          9
+        ]
+      ]
+    },
+    {
+      "id": "Pump repair",
+      "symbol": "2",
+      "cells": [
+        [
+          13,
+          13
+        ],
+        [
+          14,
+          13
+        ],
+        [
+          15,
+          13
+        ],
+        [
+          12,
+          14
+        ]
+      ]
+    },
+    {
+      "id": "Bell repair",
+      "symbol": "3",
+      "cells": [
+        [
+          12,
+          5
+        ]
+      ]
+    },
+    {
+      "id": "Nullo battle",
+      "symbol": "N",
+      "cells": [
+        [
+          28,
+          10
+        ]
+      ]
+    },
+    {
+      "id": "Meadow Compiler",
+      "symbol": "C",
+      "cells": [
+        [
+          27,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "Home entry",
+      "symbol": "H",
+      "cells": [
+        [
+          18,
+          6
+        ]
+      ]
+    },
+    {
+      "id": "Locked forest exit",
+      "symbol": "x",
+      "cells": [
+        [
+          29,
+          1
+        ]
+      ]
+    }
+  ],
+  "doors": [
+    {
+      "id": "home",
+      "row": 0,
+      "visualFeet": [
+        18.22,
+        6.91
+      ],
+      "drawCellWorldPixels": 26.4,
+      "triggerCell": [
+        18,
+        6
+      ],
+      "arrivalCell": [
+        18,
+        7
+      ],
+      "travel": "REG0 home; inside arrival [4,6] facing up"
+    },
+    {
+      "id": "lab",
+      "row": 1,
+      "visualFeet": [
+        3.96,
+        4.02
+      ],
+      "drawCellWorldPixels": 29.76,
+      "travel": "cosmetic + dialogue, no interior",
+      "interaction": "facing L or T within 1.6 tiles of anchor"
+    },
+    {
+      "id": "cottage",
+      "row": 2,
+      "visualFeet": [
+        14.58,
+        5.04
+      ],
+      "drawCellWorldPixels": 24,
+      "travel": "cosmetic + dialogue, no interior",
+      "interaction": "facing L or T within 1.6 tiles of anchor"
+    },
+    {
+      "id": "palisade",
+      "row": 3,
+      "visualFeet": [
+        22.18,
+        8.68
+      ],
+      "travel": "spare art only; no gate trigger/collider registered",
+      "enabled": false
+    }
+  ],
+  "villagers": [
+    {
+      "id": "green-walker",
+      "spawnFeet": [
+        14.74,
+        6.72
+      ],
+      "look": 0,
+      "direction": 2,
+      "route": [
+        [
+          14,
+          6
+        ],
+        [
+          14,
+          7
+        ]
+      ],
+      "initialWaitMs": 900
+    },
+    {
+      "id": "blue-walker",
+      "spawnFeet": [
+        13.66,
+        7.52
+      ],
+      "look": 1,
+      "direction": 2,
+      "route": [
+        [
+          13,
+          7
+        ],
+        [
+          13,
+          6
+        ],
+        [
+          12,
+          6
+        ],
+        [
+          12,
+          7
+        ]
+      ],
+      "initialWaitMs": 1510
+    },
+    {
+      "id": "red-walker",
+      "spawnFeet": [
+        12.7,
+        7.52
+      ],
+      "look": 2,
+      "direction": 2,
+      "route": [
+        [
+          12,
+          7
+        ],
+        [
+          11,
+          7
+        ],
+        [
+          11,
+          6
+        ],
+        [
+          12,
+          6
+        ]
+      ],
+      "initialWaitMs": 2120
+    },
+    {
+      "id": "pump-keeper",
+      "spawnFeet": [
+        11.5,
+        14.95
+      ],
+      "look": 1,
+      "direction": 1,
+      "route": [
+        [
+          11,
+          14
+        ]
+      ],
+      "initialWaitMs": 2730
+    }
+  ],
+  "professor": {
+    "visualFeet": [
+      4.75,
+      5.6
+    ],
+    "interactionCell": [
+      4,
+      5
+    ]
+  },
+  "repairVisuals": {
+    "lantern": {
+      "atlasIndex": 2,
+      "feet": [
+        5.64,
+        10.2
+      ],
+      "widthTiles": 1.55
+    },
+    "pump": {
+      "atlasIndex": 4,
+      "feet": [
+        13.7,
+        14.75
+      ],
+      "widthTiles": 2.8
+    },
+    "bell": {
+      "atlasIndex": 6,
+      "feet": [
+        12.04,
+        6.45
+      ],
+      "widthTiles": 2.7
+    }
+  },
+  "physics": {
+    "playerStepMs": 150,
+    "turnDelayMs": 80,
+    "npcSpeedTilesPerSecond": 0.85,
+    "npcPath": "loop listed waypoints, aim at [tileX+0.5,tileY+0.95]",
+    "npcReservations": "current foot tile and moving destination",
+    "openingMs": 560,
+    "closingMs": 560,
+    "reducedMotionDoorMs": 100,
+    "deltaTimeCapMs": 64
+  },
+  "areaTitle": {
+    "durationMs": 3800,
+    "dropEndPercent": 16,
+    "settleEndPercent": 23,
+    "holdEndPercent": 79,
+    "regionNames": {
+      "0": "HOME",
+      "1": "MEADOW MAINFRAME",
+      "2": "SYNTAX FOREST"
+    },
+    "zoneDebounceMs": 650,
+    "zoneCooldownMs": 8000
+  },
+  "ambient": {
+    "chimneyFeet": [
+      2.42,
+      1.07
+    ],
+    "water": "ripples only on ~ grid tiles",
+    "plants": [
+      {
+        "feet": [
+          6.7,
+          9.8
+        ],
+        "environmentAtlasIndex": 7
+      },
+      {
+        "feet": [
+          10.8,
+          10.5
+        ],
+        "environmentAtlasIndex": 9
+      },
+      {
+        "feet": [
+          16.6,
+          10.8
+        ],
+        "environmentAtlasIndex": 7
+      },
+      {
+        "feet": [
+          23.4,
+          16.2
+        ],
+        "environmentAtlasIndex": 9
+      },
+      {
+        "feet": [
+          8.5,
+          16.7
+        ],
+        "environmentAtlasIndex": 7
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const base=__dirname+'/../',core=fs.readFileSync(base+'js/core.js','utf8');
+const rows=Array.from(core.split('const MEADOW=[')[1].split('];')[0].matchAll(/"([^"]+)"/g),m=>m[1]);
+const stub=`let REG=1,mode='walk',now=0,REDUCE=false;const T=32,M=${JSON.stringify(rows)}.map(r=>r.split('')),REG1={M,H:24,W:32},SOLID=new Set(['T','~','L','P','s','N','V','1','2','3','C','x']);const P={x:18,y:7,nx:18,ny:7,moving:false,dir:0},keys={arrowup:1},DIRS=[[0,-1],[1,0],[0,1],[-1,0]],VILLAGERS=[[14.74,6.72,2,0],[13.66,7.52,2,1],[12.7,7.52,2,2],[12.22,14.84,1,1]],performance={now:()=>now}; const screenBox={append(){}};class Image{};const document={createElement:()=>({classList:{add(){},remove(){}},setAttribute(){},append(){},offsetWidth:0})};function say(){mode='dialog'};`;
+const c=vm.createContext({console});vm.runInContext(stub+fs.readFileSync(base+'js/life.js','utf8'),c);
+const run=s=>vm.runInContext(s,c);let checks=0;
+function test(name,f){f();checks++;console.log('PASS '+name)}
+test('All 24 map rows have 32 tiles',()=>assert(rows.length===24&&rows.every(r=>r.length===32)));
+test('NPC patrol targets and spawn tiles avoid repair and terrain blockers',()=>assert(run(`LIFE.people.every(p=>{let [x,y]=personTile(p);return (!SOLID.has(M[y][x])||M[y][x]==='V')&&p.route.every(([x,y])=>!SOLID.has(M[y][x])||M[y][x]==='V')})`)));
+test('NPC waits instead of moving into player tile',()=>{run(`let p=LIFE.people[0];p.wait=0;P.x=14;P.y=6;advanceVillage(64,1000)`);assert.equal(run('LIFE.people[0].x'),14.74);assert(!run('LIFE.people[0].moving'))});
+test('Moving NPC reserves both its occupied and destination tiles',()=>{run(`LIFE.people[0].moving=true;LIFE.people[0].target=1`);assert(run('villagerOccupies(14,6)&&villagerOccupies(14,7)'));assert(!run('villagerOccupies(14,7,LIFE.people[0])'))});
+test('Dialogue freezes patrol position and animation time',()=>{run(`mode='dialog';let before=LIFE.people[0].x;advanceVillage(64,2000)`);assert(run('LIFE.people[0].x===before'))});
+test('Door blocks input, rejects duplicate trigger and travels exactly once after 560ms',()=>{run(`let trips=0;now=1000;beginDoorTravel('home',()=>trips++);beginDoorTravel('lab',()=>trips+=10);updateDoorTravel(1559)`);assert(run(`mode==='door'&&Object.keys(keys).length===0&&trips===0&&LIFE.door.id==='home'`));run('updateDoorTravel(1560);updateDoorTravel(1800)');assert(run(`trips===1&&mode==='walk'&&LIFE.door.stage==='closing'`));run('updateDoorTravel(2120)');assert(run('LIFE.door===null'))});
+test('Reduced motion uses a 100ms doorway transition',()=>{run(`REDUCE=true;now=3000;beginDoorTravel('home',()=>trips++);updateDoorTravel(3099)`);assert.equal(run('trips'),1);run('updateDoorTravel(3100)');assert.equal(run('trips'),2)});
+test('Region title does not replay for repeated calls to same region',()=>{run(`now=4000;regionTitle(1);now=5000;regionTitle(1)`);assert.equal(run('LIFE.areaAt'),4000);run('regionTitle(0)');assert.equal(run('LIFE.areaAt'),5000)});
+test('Two minute patrol simulation never crosses solid tiles or overlaps another NPC',()=>{run(`mode='walk';P.x=18;P.y=7;resetVillagePeople()`);for(let t=0;t<120000;t+=16){run(`advanceVillage(16,${t})`);assert(run(`LIFE.people.every(p=>{const [x,y]=personTile(p);return !SOLID.has(M[y][x])||M[y][x]==='V'})`));assert(run(`new Set(LIFE.people.map(p=>personTile(p).join(','))).size===LIFE.people.length`));}});
+console.log(checks+' animation / collision checks passed');

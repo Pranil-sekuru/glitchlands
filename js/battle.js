@@ -3,12 +3,14 @@
 // ---------- battle ----------
 let B=null,bs=null,lastTitle="";
 function pickBug(){
-  if(!S.tut)return BANK.find(b=>b.title==="Pizza Party Problem");
+  const home=S.starter||"js";
+  if(!S.tut)return BANK.find(b=>b.tut&&b.lang===home)||BANK.find(b=>b.tut);
   const tmax=S.catches<3?1:S.catches<8?2:3;
   const pool=REG===2?BANK.filter(b=>!b.quest&&!b.quest2&&b.title!==lastTitle&&(b.r2||(TIER[b.title]||2)>=2)):BANK.filter(b=>!b.quest&&!b.r2&&b.title!==lastTitle&&(TIER[b.title]||2)<=tmax);
+  // more Bugs of the kinds you miss; your partner's language dominates the first few hunts, then every language is common
   const w=pool.map(b=>{
     const s=S.stats[b.category]||{hit:0,miss:0};
-    return Math.max(1,1+s.miss*1.5-s.hit*0.4)
+    return Math.max(1,1+s.miss*1.5-s.hit*0.4)*(b.lang===home?(S.catches<3?6:1.4):1)
   });
   let r=Math.random()*w.reduce((a,b)=>a+b,0);
   for(let i=0;i<pool.length;i++){
@@ -48,7 +50,11 @@ function dailyN(){
   return(S.daily&&S.daily.date===today())?S.daily.n:0
 }
 function startDaily(){
-  if(mode!=="walk"||P.moving)return;
+  if(mode!=="walk")return;
+  if(!S.starter){
+    say(["Daily hunts start once you have a partner. Visit Prof. Semicolon's lab first!"]);
+    return
+  }
   const n=dailyN();
   if(n>=3){
     say(["You cleared all 3 of today's Bugs of the Day. A new set arrives tomorrow!"]);
@@ -78,9 +84,12 @@ function fitField(){
   c.height=Math.round(f.clientHeight*d);
   c._d=d
 }
-function hl(l){
-  // tiny syntax highlighter so the code reads like an editor
-  return esc(l).replace(/(\/\/.*$)|("[^"]*"|'[^']*')|\b(const|let|var|function|return|if|else|for|while|true|false|null|undefined)\b|\b(\d+(?:\.\d+)?)\b|\b([a-zA-Z_]\w*)(?=\()/g,
+// tiny syntax highlighter so the code reads like an editor: comments, strings, keywords, numbers, function calls
+const HL={js:/(\/\/.*$)|("[^"]*"|'[^']*')|\b(const|let|var|function|return|if|else|for|while|true|false|null|undefined)\b|\b(\d+(?:\.\d+)?)\b|\b([a-zA-Z_]\w*)(?=\()/g,
+ py:/(#.*$)|("[^"]*"|'[^']*')|\b(def|return|if|elif|else|for|while|in|not|and|or|True|False|None|import|from|global)\b|\b(\d+(?:\.\d+)?)\b|\b([a-zA-Z_]\w*)(?=\()/g,
+ lua:/(--.*$)|("[^"]*"|'[^']*')|\b(local|function|return|if|then|elseif|else|end|for|while|do|repeat|until|in|not|and|or|true|false|nil)\b|\b(\d+(?:\.\d+)?)\b|\b([a-zA-Z_]\w*)(?=\()/g};
+function hl(l,lang){
+  return esc(l).replace(HL[lang]||HL.js,
   (m,cm,st,kw,nu,fn)=>cm?'<span class="c">'+m+'</span>':st?'<span class="s">'+m+'</span>':kw?'<span class="k">'+m+'</span>':nu?'<span class="n">'+m+'</span>':'<span class="f">'+m+'</span>')
 }
 function show(id,on){
@@ -89,20 +98,29 @@ function show(id,on){
 function renderCode(edit){
   $("code").innerHTML=B.code.split("\n").map((l,i)=>(edit&&i==B.bug_line-1)
   ?`<div class="ln edit" data-n="${i}"><b>${i+1}</b><input id="fxin" value="${esc(l).replace(/"/g,"&quot;")}" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></div>`
-  :`<div class="ln" data-n="${i}" role="button" tabindex="0"><b>${i+1}</b><pre>${hl(l)||" "}</pre></div>`).join("")
+  :`<div class="ln" data-n="${i}" role="button" tabindex="0"><b>${i+1}</b><pre>${hl(l,B.lang)||" "}</pre></div>`).join("")
 }
 function startBattle(rival,opts={}){
   mode="battle";
   flash=300;
   const ai=(!rival&&!opts.daily&&S.tut)?AIQ.shift():null;
   B=opts.bug||(ai||pickBug());
+  B.lang=B.lang||"js";
   lastTitle=B.title;
-  const vis=makeVis(pick(catList()),rival),tut=!S.tut&&!rival&&!opts.daily,max=tut||DEV?99:(opts.lives||(S.catches<3?5:3));   // the look is random: it never reveals the bug's type
-  bs={phase:"line",cur:0,lives:max,max,hints:0,hintTxt:"",crossed:new Set(),opts:[],ci:0,rival,won:false,vis,tut,daily:!!opts.daily,didx:opts.idx||0,runs:0,typeTries:0,quest:opts.quest||null,reg:REG,byteAsks:0,fail:null,byteTxt:"",t0:Date.now()};
+  warmUp(B.lang);   // start loading Python / Lua now, so it is ready by the time you press RUN
+  // a partner who speaks the Bug's language gives all three hints, explains failed runs and adds one try
+  const partner=hasPartner(B.lang)?B.lang:null;
+  const vis=makeVis(pick(catList()),rival),tut=!S.tut&&!rival&&!opts.daily,max=tut||DEV?99:(opts.lives||(S.catches<3?5:3))+(partner?1:0);   // the look is random: it never reveals the mistake
+  bs={phase:"line",cur:0,lives:max,max,hints:0,maxHints:partner||tut?3:1,hintTxt:"",hintBy:"",crossed:new Set(),opts:[],ci:0,rival,won:false,vis,tut,daily:!!opts.daily,didx:opts.idx||0,runs:0,typeTries:0,quest:opts.quest||null,reg:REG,byteAsks:0,fail:null,byteTxt:"",t0:Date.now(),lang:B.lang,partner};
   if(opts.quest==="compiler")vis.scale=1.25;
   $("battle").classList.add("on");
+  document.documentElement.classList.add("inbattle");   // the bottom screen switches to the code console
   fitField();
-  $("fname").textContent="mystery_bug.js";
+  $("fname").textContent="mystery_bug."+LANGS[B.lang].ext;
+  const lt=$("langtag");
+  lt.textContent=(PETS[B.lang]?PETS[B.lang].icon+" ":"")+LANGS[B.lang].name.toUpperCase();
+  lt.style.setProperty("--c",LANGS[B.lang].color);
+  lt.style.setProperty("--ink",LANGS[B.lang].ink);
   $("meinfo").textContent="XP "+S.xp+" · 🔥"+S.streak;
   $("xpbar").style.width=Math.min(100,(S.xp%150)/1.5)+"%";
   show("code",true);
@@ -114,7 +132,7 @@ function startBattle(rival,opts={}){
   show("hintbtn",true);
   $("fn").textContent=rival?"NULLO'S RUSH":opts.quest?opts.label.toUpperCase():(opts.daily?"BUG OF THE DAY "+(opts.idx+1)+"/3":"WILD BUG "+vis.epi.toUpperCase())+(vis.shiny?" ✨":"");
   $("fl").textContent=rival||opts.daily||opts.quest?"":"  Lv."+(tut?1:3);
-  $("ft").textContent=(B.src=="ai"?"🤖 written by "+(B.by||"AI")+" · verified by running it":"📘 from the bug bank")+" · type unknown";
+  $("ft").textContent=LANGS[B.lang].name.toUpperCase()+" type · "+(B.src=="ai"?"🤖 written by "+(B.by||"AI"):"📘 bug bank")+" · mistake unknown";
   $("fhp").style.width="100%";
   renderCode(false);
   $("code").onclick=e=>{
@@ -127,11 +145,15 @@ function startBattle(rival,opts={}){
   };
   if(tut){
     bs.hints=1;
-    bs.hintTxt=B.hints[0]
+    bs.hintTxt=B.hints[0];
+    bs.hintBy=hintVoice()
   }
   plog("start",{src:B.src||"bank",quest:opts.quest||null,rival:!!rival,daily:!!opts.daily,tut});
   paintCode();
-  info(rival?"Nullo challenges you! ":opts.quest?"The glitch fights back! ":(opts.daily?"Daily hunt, bug "+(opts.idx+1)+" of 3! ":"A wild Bug appeared! "));
+  const lname=LANGS[B.lang].name;
+  info((rival?"Nullo challenges you! ":opts.quest?"The glitch fights back! ":(opts.daily?"Daily hunt, bug "+(opts.idx+1)+" of 3! ":"A wild "+lname+" Bug appeared! "))
+   +(tut?(partner?"":"(Practice round: every hint is open. Catch it and "+petName(B.lang)+", who speaks "+lname+", joins you!) ")
+    :partner?petName(partner)+" speaks "+lname+": full hints and +1 try! ":"Nobody on your team speaks "+lname+" yet: 1 hint only. Catch this Bug and "+petName(B.lang)+" joins you! "));
   prefetchAI();
   if(DEV){
     // dev mode skips finding the line and naming the mistake: straight to the fix
@@ -150,15 +172,36 @@ function info(pre=""){
   type:"STEP 2: Which label fits best? (Practice only: no heart is lost.) Click one, or press 1-"+bs.opts.length+".",
   fix:"STEP 3: Edit the highlighted line so the program prints what's Expected, then press RUN (Enter)."}[bs.phase]||"";
   $("msg").textContent=pre+ins;
+  $("battle").dataset.phase=$("console").dataset.phase=bs.phase;   // small screens re-balance the panels per step (see game.css)
   show("goal",bs.phase!="done");
   $("fhp").style.width=({line:100,type:66,fix:33,fixed:0,done0:0,done:bs.won?0:100})[bs.phase]+"%";
-  const h=$("hint"),hh=(bs.hintTxt?"💡 <b>PROF:</b> "+esc(bs.hintTxt):"")+(bs.byteTxt?(bs.hintTxt?"<br>":"")+"🐤 <b>BYTE:</b> "+bs.byteTxt:"");
+  const pv=bs.partner?PETS[bs.partner].icon+" <b>"+petName(bs.partner)+":</b> ":"🎓 <b>PROF:</b> ";
+  const h=$("hint"),hh=(bs.hintTxt?(bs.hintBy||"💡 <b>PROF:</b> ")+esc(bs.hintTxt):"")+(bs.byteTxt?(bs.hintTxt?"<br>":"")+pv+bs.byteTxt:"");
   if(hh&&bs.phase!="done"){
     h.style.display="";
     h.innerHTML=hh
   }else h.style.display="none";
-  $("hintbtn").textContent="💡 HINT ("+(3-bs.hints)+")";
-  $("hintbtn").disabled=bs.hints>=3;
+  const left=bs.maxHints-bs.hints;
+  $("hintbtn").textContent=left>0?"💡 HINT ("+left+")":(bs.maxHints<3?"🔒 "+LANGS[bs.lang].name.toUpperCase()+" PARTNER":"💡 HINT (0)");
+  $("hintbtn").title=bs.maxHints<3?"More hints need a partner who speaks "+LANGS[bs.lang].name:"";
+  $("hintbtn").disabled=left<=0;
+  const ask=$("byteask");
+  ask.textContent=bs.partner?PETS[bs.partner].icon+" ASK "+petName(bs.partner):"🎓 ASK PROF";
+  ask.title=bs.partner?petName(bs.partner)+" explains your last failed run":"The Prof gives a short answer; a "+LANGS[bs.lang].name+" partner would explain more";
+}
+// who gives the hints: your partner if one speaks the Bug's language, otherwise the Prof (just one hint)
+function hintVoice(){
+  return bs.partner?PETS[bs.partner].icon+" <b>"+petName(bs.partner)+":</b> ":"💡 <b>PROF:</b> "
+}
+function takeHint(){
+  if(!bs||bs.hints>=bs.maxHints){
+    if(bs&&bs.maxHints<3)info("No more hints: nobody on your team speaks "+LANGS[bs.lang].name+". ");
+    return
+  }
+  bs.hintTxt=B.hints[bs.hints++];
+  bs.hintBy=hintVoice();
+  plog("hint",{n:bs.hints});
+  info()
 }
 function paintCode(){
   [...$("code").children].forEach((d,i)=>{
@@ -246,7 +289,8 @@ function startFix(){
   show("code",true);
   show("fxbar",true);
   show("fxout",true);
-  $("fxout").innerHTML='<span class="dim">Press RUN to see what your program prints.</span>';
+  const vis0=B.out.length-(B.extra?B.extra.split("\n").filter(l=>l.trim()).length:0);
+  $("fxout").innerHTML='<span class="dim">Press RUN to see what your program prints. Expected:</span>\n'+B.out.slice(0,vis0).map(esc).join("\n");
   $("fxrun").disabled=false;   // the last battle's win left it disabled
   renderCode(true);
   bs.atkAt=performance.now();
@@ -287,14 +331,15 @@ function giveUp(){
 }
 // A fake fix replaces the calculation with a constant (const perFriend = 3; / return 72;).
 // Caught when the textbook fix computes its value from other names but the player's line computes it from none.
-const KW=new Set(["const","let","var","return","true","false","null","undefined","new","typeof","Math","String","Number","console","log"]);
+const KW=new Set(["const","let","var","return","true","false","null","undefined","new","typeof","Math","String","Number","console","log",
+ "local","nil","and","or","not","tostring","tonumber","True","False","None","print","int","str","float","len"]);
 function readsNames(rhs){
   return(String(rhs).replace(/(["'`])(?:\\.|(?!\1).)*\1/g,"").match(/[A-Za-z_$][\w$]*/g)||[]).filter(n=>!KW.has(n)).length>0
 }
 function valueOf(line){
   const s=line.trim().replace(/;\s*$/,""),r=s.match(/^return\b(.*)$/);
   if(r)return r[1];
-  const a=s.match(/^(?:(?:const|let|var)\s+)?[\w$.\[\]]+\s*(?:[+\-*/%]|\*\*)?=(?!=)(.*)$/);
+  const a=s.match(/^(?:(?:const|let|var|local)\s+)?[\w$.\[\]]+\s*(?:[+\-*/%]|\*\*|\/\/)?=(?!=)(.*)$/);
   return a?a[1]:null
 }
 function hardcoded(val,fix){
@@ -316,13 +361,17 @@ function byteAsk(){
   }
   let t;
   if(f.err){
-    if(f.timeout||/too much output/i.test(f.err))t="your program never finishes (or prints forever). A loop isn't moving toward its stop condition. Check what changes each time round.";
-    else if(/not defined|find variable/i.test(f.err)){
-      const m=f.err.match(/variable:\s*(\w+)/i)||f.err.match(/(\w+) is not defined/);
-      t="it uses a name the computer doesn't know"+(m?" ("+q2(m[1])+")":"")+". Compare the spelling with the variables in the code above.";
-    }
-    else if(/syntax|unexpected/i.test(f.err))t="something is missing or extra: a bracket, a quote or an operator. Read your line slowly, symbol by symbol.";
-    else t="it crashed with "+q2(f.err)+". Look at the values your line uses.";
+    // error messages differ per language: JavaScript "x is not defined", Python "NameError: name 'x' is not defined",
+    // Lua "attempt to perform arithmetic on a nil value (global 'x')"
+    const e=f.err,name=(e.match(/name '(\w+)' is not defined/)||e.match(/(?:variable:\s*|global ')(\w+)/)||e.match(/(\w+) is not defined/)||[])[1];
+    if(f.timeout||/too much output/i.test(e))t="your program never finishes (or prints forever). A loop isn't moving toward its stop condition. Check what changes each time round.";
+    else if(name||/not defined|find variable/i.test(e))t="it uses a name the computer doesn't know"+(name?" ("+q2(name)+")":"")+". Compare the spelling with the variables in the code above"+(B.lang==="lua"?", and remember a local variable disappears at the end of its block.":".");
+    else if(/IndentationError|unindent|expected an indented/i.test(e))t="the spaces at the start of your line don't line up. In Python the indentation shows which block a line belongs to: keep the same spaces as the line had before.";
+    else if(/syntax|unexpected|expected near|invalid/i.test(e))t="something is missing or extra: a bracket, a quote or an operator"+(B.lang==="lua"?" (Lua writes 'not equal' as ~= and joins text with ..)":"")+". Read your line slowly, symbol by symbol.";
+    else if(/TypeError|on a string value|concatenate/i.test(e))t="it mixes two kinds of value, like text and a number. "+(B.lang==="py"?"Python won't add text to a number: convert one of them first (int() or str()).":B.lang==="lua"?"In Lua, + is only for numbers and .. joins text. Is a value nil (missing) or of the wrong kind?":"Check the kind of each value your line uses.");
+    else if(/IndexError|out of range/i.test(e))t="it reads past the end of a list or a word. Positions start at 0, so the last one is at length - 1.";
+    else if(/nil value/i.test(e))t="a value is nil, which means missing. Is a variable created where it can't be seen, or a function not returning anything?";
+    else t="it crashed with "+q2(e)+". Look at the values your line uses.";
   }else{
     const exp=B.out,got=f.out;
     let i=0;
@@ -333,7 +382,7 @@ function byteAsk(){
     }
     else{
       t="the output doesn't match. Line "+(i+1)+" should print "+q2(E)+" but your program printed "+q2(A)+". ";
-      if(/undefined/.test(A))t+="'undefined' means a value was never given back or the wrong thing was read.";
+      if(/^(undefined|None|nil)$|\b(undefined|None|nil)\b/.test(A))t+="'"+(A.match(/undefined|None|nil/)||["undefined"])[0]+"' means a value was never given back, or the wrong thing was read.";
       else if(got.length<exp.length)t+="It printed fewer lines than expected, so something stops too early.";
       else if(got.length>exp.length)t+="It printed too many lines, so something runs too long.";
       else if(!isNaN(+E)&&!isNaN(+A))t+="The number is "+(Math.abs(+A-+E))+" "+(+A>+E?"too big":"too small")+". Check the arithmetic on your line.";
@@ -347,18 +396,27 @@ function byteAsk(){
       }
     }
   }
+  if(!bs.partner){
+    // without a partner who speaks this language, the Prof only says WHAT failed, not what it suggests
+    const parts=t.split(/(?<=\.)\s/),first=parts[0].length<40&&parts[1]?parts[0]+" "+parts[1]:parts[0];
+    t=first+" <i>(A "+langName(B.lang)+" partner would explain more.)</i>"
+  }
   bs.byteTxt=t;
   info()
 }
 async function runFix(){
   if(!bs||bs.phase!=="fix"||running)return;
-  const inp=$("fxin"),orig=B.code.split("\n")[B.bug_line-1],val=(inp.value||"").replace(/\s+$/,"");
+  const inp=$("fxin"),orig=B.code.split("\n")[B.bug_line-1],lang=B.lang||"js",pr=LANGS[lang].print;
+  let val=(inp.value||"").replace(/\s+$/,"");
+  // Python cares about indentation: if the player's line lost its leading spaces, put the original ones back
+  const indent=orig.match(/^\s*/)[0];
+  if(val.trim()&&!/^\s/.test(val)&&indent)val=indent+val;
   const fo=$("fxout");
   if(!val.trim()||val.trim()===orig.trim()){
     fo.innerHTML='<span class="bad">Change something first. Look at Expected vs Got, then edit the line.</span>';
     return
   }
-  if(/console\s*\.\s*log/.test(val)&&!/console\s*\.\s*log/.test(orig)){
+  if(pr.test(val)&&!pr.test(orig)){
     fo.innerHTML='<span class="bad">Fix the logic. Printing the answer yourself doesn\'t count!</span>';
     return
   }
@@ -372,14 +430,20 @@ async function runFix(){
   fo.innerHTML='<span class="dim">Running…</span>';
   const lines=B.code.split("\n");
   lines[B.bug_line-1]=val;
-  const r=await runCode(lines.join("\n")+(B.extra?"\n"+B.extra:""));
+  const r=await runCode(lines.join("\n")+(B.extra?"\n"+B.extra:""),900,lang,msg=>{
+    fo.innerHTML='<span class="dim">'+esc(msg)+'</span>'
+  });
   running=false;
   if(!bs||bs.phase!=="fix")return;
   $("fxrun").disabled=false;
   bs.runs++;
-  const extraN=B.extra?B.extra.split("console.log").length-1:0,vis=B.out.length-extraN;
+  const extraN=B.extra?B.extra.split("\n").filter(l=>l.trim()).length:0,vis=B.out.length-extraN;
   const shown=r.out.slice(0,vis).map(esc).join("\n")||"(nothing)";
   bs.fail=r.ok?{out:r.out,vis}:{err:r.err,timeout:!!r.timeout};
+  if(!r.ok&&r.load){
+    fo.innerHTML=`<span class="bad">${esc(r.err)}</span>\n<span class="dim">Check your connection and press RUN again. No try lost.</span>`;
+    return
+  }
   if(!r.ok){
     plog("run",{ok:false,why:"crash"});
     fo.innerHTML=`<span class="bad">Your code crashed: ${esc(r.err)}</span>\n<span class="dim">Check the syntax. No heart lost for crashes.</span>`;
@@ -406,15 +470,19 @@ async function runFix(){
 // ---------- STEP 4 (bonus): throw the net. The ring passes the sweet spot and keeps shrinking; doing nothing = a miss ----------
 const qc=$("qc"),q=qc.getContext("2d");
 const NET_R=p=>200-190*p;   // radius: 200 -> 10; the sweet spot (40) is crossed at p=0.84
+function sizeNet(){
+  // the net covers the game screen (not the whole window: on a phone the controls stay usable around it)
+  const d=dprv(),box=$("screen");
+  qc.width=Math.round(box.clientWidth*d);
+  qc.height=Math.round(box.clientHeight*d);
+  qc._d=d
+}
 function startNet(){
   bs.phase="net";
   bs.qs=performance.now();
   bs.dur=2000;
   show("menu",false);
-  const d=dprv();
-  qc.width=Math.round(innerWidth*d);
-  qc.height=Math.round(innerHeight*d);
-  qc._d=d;
+  sizeNet();
   qc.style.display="block"
 }
 function netFrame(now){
@@ -435,12 +503,13 @@ function netFrame(now){
   q.arc(cx,cy,Math.max(2,r),0,7);
   q.stroke();                           // closing net
   q.fillStyle="#e8eeff";
-  q.font="bold "+Math.max(16,22*u)+"px 'Courier New'";
   q.textAlign="center";
-  q.fillText("THROW THE NET! Press Enter (or tap) when the rings meet",cx,Math.max(40,60*u));
-  q.font=Math.max(12,15*u)+"px 'Courier New'";
+  const narrow=w<520;
+  q.font="bold "+Math.max(14,22*u)+"px 'Courier New'";
+  q.fillText(narrow?"THROW THE NET!":"THROW THE NET! Press Enter (or tap) when the rings meet",cx,Math.max(36,60*u));
+  q.font=Math.max(11,15*u)+"px 'Courier New'";
   q.fillStyle="#9fc7aa";
-  q.fillText("Bonus XP for good timing. Don't press at all and you earn nothing extra.",cx,Math.max(64,88*u));
+  q.fillText(narrow?"Press A (or tap) when the rings meet":"Bonus XP for good timing. Don't press at all and you earn nothing extra.",cx,Math.max(58,88*u));
   if(p>=1){
     bs.phase="done0";
     qc.style.display="none";
@@ -479,6 +548,9 @@ function finish(win,grade=""){
     const gain=Math.max(10,30-Math.max(0,bs.hints-1-(S.q2.chest?1:0))*8+(bs.tut?0:Math.min(bs.lives,5)*3)+bonus+first+(bs.rival?40:0)+(bs.typeBonus||0)+(bs.quest?20:0)+(bs.vis.shiny?30:0)+(bs.daily&&bs.didx==2?50:0));
     S.xp+=gain;
     S.catches++;
+    S.langCatch[B.lang]=(S.langCatch[B.lang]||0)+1;
+    // the first Bug you catch in a new language brings that language's partner onto your team
+    bs.joined=!hasPartner(B.lang)&&recruit(B.lang)?B.lang:null;
     $("fhp").style.width="0%";
     bs.caughtAt=performance.now();
     const st=S.stats[B.category]=S.stats[B.category]||{hit:0,miss:0};
@@ -513,6 +585,7 @@ function finish(win,grade=""){
     $("result").innerHTML=`<div class="big okc">✅ Caught! It was ${art(sp)} ${esc(sp)}</div><div>${esc(real[2])}</div>
    <div class="fix"><b>Your fix:</b> <code>${esc(bs.fixedLine||B.fix)}</code></div>
    <div class="fix"><b>A textbook fix:</b> <code>${esc(B.fix)}</code></div><p>${esc(B.explanation)}</p>
+   ${bs.joined?`<div class="joined" style="--c:${LANGS[bs.joined].color}"><img src="${petThumb(bs.joined)}" alt="" width="48" height="48"><div><b>${petName(bs.joined)} joined your team!</b><br>${LANGS[bs.joined].name} Bugs now get all three hints, full explanations and +1 try.</div></div>`:""}
    <div class="sm">+${gain} XP${grade?" · net: "+grade:""}${first?" · fixed on the first run (+10)":""}${bs.daily?" · daily "+(bs.didx+1)+"/3"+(bs.didx==2?" complete (+50)":""):""}</div><button data-act="end">Continue ▶ (Enter)</button>`;
   }else{
     $("msg").textContent="No worries. Reading the fix is how you learn.";
@@ -523,12 +596,21 @@ function finish(win,grade=""){
   hud();
 }
 function endBattle(){
-  const rival=bs.rival,won=bs.won,daily=bs.daily,quest=bs.quest,reg=bs.reg;
+  const v={rival:bs.rival,won:bs.won,daily:bs.daily,quest:bs.quest,reg:bs.reg},joined=bs.joined;
   $("battle").classList.remove("on");
+  document.documentElement.classList.remove("inbattle");
   qc.style.display="none";
   bs=null;
   mode="walk";
   prefetchAI();
+  if(joined){
+    const p=PETS[joined];
+    say([`The ${langName(joined)} Bug shakes off its glitch... and it's ${p.name}!`,`${p.name}: ${p.blurb}`,`${p.name} joined your team! From now on, ${langName(joined)} Bugs get all three hints, full explanations and +1 try.`],()=>afterBattle(v));
+    return
+  }
+  afterBattle(v)
+}
+function afterBattle({rival,won,daily,quest,reg}){
   if(reg===2){
     if(won&&(quest||rival))afterQuest2(quest||"rival");
     else if(rival)say(["NULLO: Not yet. Come back when you have thought it through."]);
